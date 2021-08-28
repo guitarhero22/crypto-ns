@@ -16,4 +16,5 @@ int main(int argc, char* argv[]){
 
     unsigned int num_peers = std::stoul(std::string(argv[1]));
     Simulator s(num_peers);
+    s.start(100);
 }
