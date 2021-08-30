@@ -2,11 +2,14 @@
 #include<iostream>
 #include<queue>
 
+extern int NUM_PEERS;
+
 Simulator::Simulator(unsigned int n) 
 {
+    NUM_PEERS = n;
     peers = std::vector<Peer>(n);
 
-    for(int i=0; i < n; ++i) peers[i] = Peer(i, 10, 0, (i%2));
+    for(int i=0; i < n; ++i) peers[i] = Peer(i, 500, 0, (i%2));
     ConnectGraphByRandomWalk(peers);
 
     for(int i=0; i < n; ++i) {
