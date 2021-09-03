@@ -9,3 +9,8 @@ void logerr(std::string str){
     std::cerr << str << std::endl;
     exit(1);
 }
+
+void log(std::string str){
+    std::cout << str << std::endl;
+    return;
+}

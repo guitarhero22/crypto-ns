@@ -28,7 +28,7 @@ public:
     Link(){}
     Link(Peer *, Peer *);
     Event* send(Msg *, Ticks);
-    std::vector<Event*> sent(Ticks);
+    std::vector<Event*> sent(Ticks, EID_t);
 
     std::priority_queue<pTM, std::vector<pTM>, std::greater<pTM>> Q;
     Peer *src;
@@ -55,9 +55,10 @@ public:
     //Event Callbacks
     std::vector<Event *> rcvMsg(Peer*, Msg*, Ticks);
     std::vector<Event *> rcvTxn(Peer*, Txn*, Ticks); //Callback for receiving a transaction
-    std::vector<Event *> genTxn(Ticks);
+    std::vector<Event *> genTxn(Ticks, EID_t);
     std::vector<Event *> rcvBlk(Peer*, Blk*, Ticks);
-    std::vector<Event *> genBlk(Ticks, Ticks, BID_t);
+    std::vector<Event *> genBlk(Ticks, EID_t);
+    Event *start_mining_session(Ticks startTime);
 
     //for randomness
     ID_t ID;
@@ -72,7 +73,11 @@ public:
     Ticks miningSessionStart = 0;
     Tree tree;
     std::unordered_map<Peer *, Link> links;
-    std::unordered_map<TID_t, Txn*> forNxtBlk; // Will hold transactions for the next Block
+
+    // Mining
+    BID_t mining_on = 0;
+    EID_t mining_event = 0;
+    std::unordered_map<TID_t, Txn*> TxnForNxtBlk; // Will hold transactions for the next Block
 };
 
 void ConnectGraphByRandomWalk(std::vector<Peer> &);

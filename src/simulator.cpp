@@ -9,16 +9,20 @@ Simulator::Simulator(unsigned int n)
     NUM_PEERS = n;
     peers = std::vector<Peer>(n);
 
-    for(int i=0; i < n; ++i) peers[i] = Peer(i, 500, 0, (i%2));
+    for(int i=0; i < n; ++i) peers[i] = Peer(i, 100, 400, (i%2));
     ConnectGraphByRandomWalk(peers);
 
     auto peerInitEvents = Peer::INIT(peers);
     for(auto &e : peerInitEvents) {
+        if(e == NULL) continue;
         eventQ.push(e);
     }
 }
 
 void Simulator::start(Ticks end_time){
+
+    log("Starting Simulation...");
+
     while(!eventQ.empty()){
         auto nexus = eventQ.top();
         eventQ.pop();

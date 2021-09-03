@@ -60,20 +60,22 @@ public:
     {
         return NUM_BLKS++;
     }
-    static Blk* new_blk(std::unordered_map<TID_t, Txn*> &txns, BID_t parent, Ticks creationTime){
-        return new Blk(txns, parent, creationTime);
+    static Blk* new_blk(ID_t c, std::unordered_map<TID_t, Txn*> &txns, BID_t parent, Ticks creationTime){
+        return new Blk(c, txns, parent, creationTime);
     };
 
     Blk(): Msg(0, BLOCK) {}
-    Blk(std::unordered_map<TID_t, Txn*> &_txns, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(get_next_blk()), timestamp(creationTime), txns(_txns), parent(_parent)
+    Blk(ID_t c, std::unordered_map<TID_t, Txn*> &_txns, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(get_next_blk()), timestamp(creationTime), txns(_txns), parent(_parent), creator(c)
     {
         // size of self and parent ID and timestamp and the size of all transactions
-        (size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000) += Txn::DEFAULT_SIZE * txns.size();
+        size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000.0;
+        size += Txn::DEFAULT_SIZE * txns.size();
     };
 
     BID_t ID;                            // ID
     BID_t parent;                        // Parent Block ID
     Ticks timestamp;                     // Time when the block was created
+    ID_t creator;                           // The peer who generated this block
     std::unordered_map<TID_t, Txn*> txns; // Transactions added to the block
 };
 
@@ -82,9 +84,11 @@ class Node
 {
 public:
     Node() {}
+    Node(Blk *b, Node* p, BID_t l, Ticks a): blk(b), parent(p), chainLength(l), arrival(a){}
     Blk *blk;
     Node *parent = NULL;
     BID_t chainLength = 0;
+    Ticks arrival;
 };
 
 //Data structure used by peer handle Txns and Blocks
@@ -95,7 +99,7 @@ public:
     bool findTxn(TID_t);
     bool findBlk(BID_t);
     bool addTxn(Txn*);
-    bool insert(Blk *blk, bool inChain); // insert block in chain
+    bool addBlk(Blk *blk); // insert block in chain
     BID_t getLastId(){
         if(longest != NULL) return (*longest).blk -> ID; 
         else return -1;
@@ -104,6 +108,7 @@ public:
     Node *genesis;
     Node *longest;
     std::map<TID_t, Txn*> txnPool;
+    std::unordered_map<TID_t, Txn*> invalidTxns;
     std::unordered_set<TID_t> inBlkChain;
     std::unordered_map<BID_t, Node*> blks;
 };

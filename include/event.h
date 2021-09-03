@@ -9,17 +9,21 @@
 
 class Event; //Forward declaration
 class EventGenerator{};
-typedef std::vector<Event*> (EventGenerator::*callback_t)(Ticks);
+typedef std::vector<Event*> (EventGenerator::*callback_t)(Ticks, EID_t);
 
 class Event{
     public:
+        static EID_t NUM_EVENTS;
+        static EID_t get_next_event(){return NUM_EVENTS++;}
+
         Event(){};
         Event(Ticks t):timestamp(t){};
-        Event(Ticks t, EventGenerator* o, std::vector<Event*> (EventGenerator::*_play)(Ticks)) : timestamp(t), obj(o), play(_play){};
+        Event(Ticks t, EventGenerator* o, callback_t _play) : timestamp(t), obj(o), play(_play), ID(get_next_event()){};
+        EID_t ID;
         EventGenerator* obj;
-        std::vector<Event*> (EventGenerator::*play)(Ticks);
+        callback_t play;
         std::vector<Event*> callback(Ticks t) {
-            ((*obj).*play)(t);
+            return ((*obj).*play)(t, ID);
         };
         Ticks timestamp; 
 };
