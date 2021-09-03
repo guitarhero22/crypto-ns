@@ -1,4 +1,5 @@
 #VSCODE files
+test
 .vscode/*
 
 #build dir

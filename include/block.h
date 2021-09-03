@@ -8,7 +8,19 @@
 #include <map>
 
 // Define the Block Class here
-class Txn
+
+#define BLOCK 0
+#define TXN 1
+
+class Msg{
+    public:
+        Msg(){};
+        Msg(Size sz, int t): size(sz), type(t){}
+        Size size;
+        int type;
+};
+
+class Txn: public Msg
 {
 public:
     static Size DEFAULT_SIZE;
@@ -22,16 +34,15 @@ public:
         return new Txn(src, tgt, c, t);
     };
 
-    Txn(){};
-    Txn(TID_t tid, ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(tid), idx(src), idy(tgt), amt(c), timestamp(t), size(DEFAULT_SIZE) {}
-    Txn(ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(get_next_txn()), idx(src), idy(tgt), amt(c), timestamp(t), size(DEFAULT_SIZE){};
+    Txn(): Msg(DEFAULT_SIZE, TXN){};
+    Txn(TID_t tid, ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(tid), idx(src), idy(tgt), amt(c), timestamp(t), Msg(DEFAULT_SIZE, TXN) {}
+    Txn(ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(get_next_txn()), idx(src), idy(tgt), amt(c), timestamp(t), Msg(DEFAULT_SIZE, TXN) {};
 
     TID_t ID;
     ID_t idx;
     ID_t idy;
     coin_t amt;
     Ticks timestamp;
-    Size size = 8;
 };
 
 class compare_txn
@@ -40,7 +51,7 @@ public:
     bool operator()(const Txn &a, const Txn &b) { return a.timestamp < b.timestamp; }
 };
 
-class Blk
+class Blk: public Msg
 {
 public:
     static BID_t NUM_BLKS;
@@ -53,8 +64,8 @@ public:
         return new Blk(txns, parent, creationTime);
     };
 
-    Blk() {}
-    Blk(std::unordered_map<TID_t, Txn*> &_txns, BID_t _parent, Ticks creationTime) : ID(get_next_blk()), timestamp(creationTime), size(0), txns(_txns), parent(_parent)
+    Blk(): Msg(0, BLOCK) {}
+    Blk(std::unordered_map<TID_t, Txn*> &_txns, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(get_next_blk()), timestamp(creationTime), txns(_txns), parent(_parent)
     {
         // size of self and parent ID and timestamp and the size of all transactions
         (size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000) += Txn::DEFAULT_SIZE * txns.size();
@@ -62,7 +73,6 @@ public:
 
     BID_t ID;                            // ID
     BID_t parent;                        // Parent Block ID
-    Size size = 0;                       // Size of the block
     Ticks timestamp;                     // Time when the block was created
     std::unordered_map<TID_t, Txn*> txns; // Transactions added to the block
 };

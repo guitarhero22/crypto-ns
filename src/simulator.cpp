@@ -12,8 +12,9 @@ Simulator::Simulator(unsigned int n)
     for(int i=0; i < n; ++i) peers[i] = Peer(i, 500, 0, (i%2));
     ConnectGraphByRandomWalk(peers);
 
-    for(int i=0; i < n; ++i) {
-        eventQ.push(new PeerGenTxn(&peers[i], peers[i].nextTxnTime(peers[i].rng)));
+    auto peerInitEvents = Peer::INIT(peers);
+    for(auto &e : peerInitEvents) {
+        eventQ.push(e);
     }
 }
 

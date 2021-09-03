@@ -30,6 +30,8 @@ T _unif_int(T l, T h)
     return distr(rng);
 }
 
+void logerr(std::string str);
+
 //Define Functions here to return a unique blockid and transactionid, just keep a counter / static int inside the function
 
 #endif
