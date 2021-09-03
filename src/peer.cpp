@@ -40,8 +40,11 @@ std::vector<Event*> Link::sent(Ticks sentTime){
 
 // Peer
 std::vector<Event*> Peer::INIT(std::vector<Peer> &peers){
-        std::vector<Event*> initEvents;
-
+        int sz = peers.size();
+        std::vector<Event*> initEvents(sz);
+        for(int i=0; i < sz; ++i) {
+            initEvents[i] = new Event(peers[i].nextTxnTime(peers[i].rng), &peers[i], reinterpret_cast<callback_t> (&Peer::genTxn));
+        }
         return initEvents;
 };
 
