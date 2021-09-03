@@ -18,6 +18,10 @@ public:
         return NUM_TXNS++;
     }
 
+    static Txn* new_txn(ID_t src, ID_t tgt, coin_t c, Ticks t){
+        return new Txn(src, tgt, c, t);
+    };
+
     Txn(){};
     Txn(TID_t tid, ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(tid), idx(src), idy(tgt), amt(c), timestamp(t), size(DEFAULT_SIZE) {}
     Txn(ID_t src, ID_t tgt, coin_t c, Ticks t) : ID(get_next_txn()), idx(src), idy(tgt), amt(c), timestamp(t), size(DEFAULT_SIZE){};
@@ -45,9 +49,12 @@ public:
     {
         return NUM_BLKS++;
     }
+    static Blk* new_blk(std::unordered_map<TID_t, Txn*> &txns, BID_t parent, Ticks creationTime){
+        return new Blk(txns, parent, creationTime);
+    };
 
     Blk() {}
-    Blk(std::unordered_map<TID_t, Txn> _txns, BID_t _parent, Ticks creationTime) : ID(get_next_blk()), timestamp(creationTime), size(0), txns(_txns), parent(_parent)
+    Blk(std::unordered_map<TID_t, Txn*> &_txns, BID_t _parent, Ticks creationTime) : ID(get_next_blk()), timestamp(creationTime), size(0), txns(_txns), parent(_parent)
     {
         // size of self and parent ID and timestamp and the size of all transactions
         (size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000) += Txn::DEFAULT_SIZE * txns.size();
@@ -57,7 +64,7 @@ public:
     BID_t parent;                        // Parent Block ID
     Size size = 0;                       // Size of the block
     Ticks timestamp;                     // Time when the block was created
-    std::unordered_map<TID_t, Txn> txns; // Transactions added to the block
+    std::unordered_map<TID_t, Txn*> txns; // Transactions added to the block
 };
 
 //Data structure used to store blocks in BlkTree by peers
@@ -65,7 +72,7 @@ class Node
 {
 public:
     Node() {}
-    Blk blk;
+    Blk *blk;
     Node *parent = NULL;
     BID_t chainLength = 0;
 };
@@ -76,13 +83,17 @@ class Tree
 public:
     Tree() {}
     bool findTxn(TID_t);
-    bool addTxn(Txn);
-    bool insert(Blk blk, bool inChain){return false;}; // insert block in chain
-    BID_t getLastId(){return 0;}; //
+    bool findBlk(BID_t);
+    bool addTxn(Txn*);
+    bool insert(Blk *blk, bool inChain); // insert block in chain
+    BID_t getLastId(){
+        if(longest != NULL) return (*longest).blk -> ID; 
+        else return -1;
+    }; //
      
     Node *genesis;
     Node *longest;
-    std::map<TID_t, Txn> txnPool;
+    std::map<TID_t, Txn*> txnPool;
     std::unordered_set<TID_t> inBlkChain;
     std::unordered_map<BID_t, Node*> blks;
 };

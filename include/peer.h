@@ -22,8 +22,8 @@ class Link
 public:
     Link() {}
     Link(Peer *, Peer *);
-    Event *sendTxn(Txn, Ticks);
-    Event *sendBlk(Blk, Ticks);
+    Event *sendTxn(Txn*, Ticks);
+    Event *sendBlk(Blk*, Ticks);
     // Event send_block(Block){};
 
     Peer *src;
@@ -47,9 +47,9 @@ public:
     bool is_slow() { return slow; }
 
     //Event Callbacks
-    std::vector<Event *> rcvTxn(Peer *, Txn, Ticks); //Callback for receiving a transaction
+    std::vector<Event *> rcvTxn(Peer*, Txn*, Ticks); //Callback for receiving a transaction
     std::vector<Event *> genTxn(Ticks);
-    std::vector<Event *> rcvBlk(Peer *, Blk, Ticks);
+    std::vector<Event *> rcvBlk(Peer*, Blk*, Ticks);
     std::vector<Event *> genBlk(Ticks, Ticks, BID_t);
 
     //for randomness
@@ -65,17 +65,17 @@ public:
     Ticks miningSessionStart = 0;
     Tree tree;
     std::unordered_map<Peer *, Link> links;
-    std::unordered_map<TID_t, Txn> forNxtBlk; // Will hold transactions for the next Block
+    std::unordered_map<TID_t, Txn*> forNxtBlk; // Will hold transactions for the next Block
 };
 
 // Events related to Peers and Links
 class PeerRcvTxn : public Event
 {
 public:
-    PeerRcvTxn(Peer *_from, Peer *_to, Txn _txn, Ticks t) : Event(t), txn(_txn), from(_from), to(_to){};
+    PeerRcvTxn(Peer *_from, Peer *_to, Txn *_txn, Ticks t) : Event(t), txn(_txn), from(_from), to(_to){};
     std::vector<Event *> callback(Ticks);
     Peer *from, *to;
-    Txn txn;
+    Txn *txn;
 };
 
 class PeerGenTxn : public Event
@@ -99,10 +99,10 @@ public:
 class PeerRcvBlk : public Event
 {
 public:
-    PeerRcvBlk(Peer *_from, Peer *_to, Blk _blk, Ticks t) : Event(t), blk(_blk), from(_from), to(_to){};
+    PeerRcvBlk(Peer *_from, Peer *_to, Blk *_blk, Ticks t) : Event(t), blk(_blk), from(_from), to(_to){};
     std::vector<Event *> callback(Ticks);
     Peer *from, *to;
-    Blk blk;
+    Blk *blk;
 };
 
 void ConnectGraphByRandomWalk(std::vector<Peer> &);

@@ -14,8 +14,27 @@ bool Tree::findTxn(TID_t tid){
     );
 }
 
-bool Tree::addTxn(Txn txn){
-    if(findTxn(txn.ID)) return true;
-    txnPool[txn.ID] = txn;
+bool Tree::addTxn(Txn *txn){
+    if(findTxn(txn -> ID)) return true;
+    txnPool[txn -> ID] = txn;
     return false;
+}
+
+bool Tree::findBlk(BID_t bid){
+    return (
+        blks.find(bid) != blks.end()
+    );
+}
+
+bool Tree::insert(Blk *blk, bool inChain){
+    if(findBlk(blk -> ID)){
+        return true;
+    }
+
+    if(!findBlk(blk -> parent)) return false;
+    if(inChain)
+        if(getLastId() != blk -> parent) return false;
+
+    //! Complete this function
+
 }
