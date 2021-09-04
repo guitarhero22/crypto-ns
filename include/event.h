@@ -8,37 +8,72 @@
 // An event will have a callback to invoke at the time event has to be executed
 
 class Event; //Forward declaration
-class EventGenerator{
-    public:
-        // ~EventGenerator(){log("EventGenerator::destructor");}
-};
-typedef std::vector<Event*> (EventGenerator::*callback_t)(Ticks, EID_t);
 
-class Event{
-    public:
-        static EID_t NUM_EVENTS;
-        static EID_t get_next_event(){return NUM_EVENTS++;}
-
-        Event(){};
-        Event(Ticks t):timestamp(t){};
-        Event(Ticks t, EventGenerator* o, callback_t _play) : timestamp(t), obj(o), play(_play), ID(get_next_event()){};
-        EID_t ID;
-        EventGenerator* obj = NULL;
-        callback_t play;
-        std::vector<Event*> callback(Ticks t) {
-            return ((*obj).*play)(t, ID);
-            obj = NULL;
-        };
-        Ticks timestamp; 
-
-        // ~Event(){log("Event::destructor"); return;}
+/**
+ * EventGenerator to allow callbacks to member functions of Peers and Links,
+ * Acts as Context for these callback functions
+ */
+class EventGenerator
+{
+public:
 };
 
-class compare_event{
-    public: 
-        bool operator() (Event *a, Event *b){
-            return a -> timestamp > b -> timestamp;
-        }
+typedef std::vector<Event *> (EventGenerator::*callback_t)(Ticks, EID_t); ///< callback Type
+
+/**
+ * Event 
+ * 
+ * And Event can be added to the Event Queue and Executed using callbacks from EventGenerator Classes
+ * Executing an Event generates more Events which can be added to the Event Queue
+ */
+class Event
+{
+public:
+    static EID_t NUM_EVENTS;                            ///< To keep a count of number of Events
+    static EID_t getNxtEvent() { return NUM_EVENTS++; } ///< Returns next available Event ID (EID_t)
+
+    Event(){};                       ///< Constructor
+    Event(Ticks t) : timestamp(t){}; ///< Constructor
+
+    /**
+     * Constructor
+     *  
+     * @param ts The time when this event is to be executed 
+     * @param cxt The context to be used (The EventGenerator Obj) to call _play
+     * @param cb A member function pointer to the class EventGenerator with the signature as in `callback_t`
+     * 
+     * @returns 
+     */
+    Event(Ticks ts, EventGenerator *cxt, callback_t cb) : timestamp(ts), context(cxt), callback(cb), ID(getNxtEvent()){};
+    EID_t ID;
+    EventGenerator *context = NULL; ///< Context for the Callback
+    callback_t callback;            ///<
+
+    /**
+     * Execute Event
+     * 
+     * Just a wrapper around, the callback of type `callback_t`,
+     * which is called using the context (just a pointed to an EventGenerator Class)
+     */
+    std::vector<Event *> execute(Ticks t)
+    {
+        return ((*context).*callback)(t, ID);
+        context = NULL;
+    };
+
+    Ticks timestamp; ///< time when event needs to be executed
+};
+
+/**
+ * For sorting the Events, increasing timestamps in the Event Queue
+ */
+class compare_event
+{
+public:
+    bool operator()(Event *a, Event *b)
+    {
+        return a->timestamp > b->timestamp;
+    }
 };
 
 #endif

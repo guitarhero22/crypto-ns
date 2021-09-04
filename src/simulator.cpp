@@ -4,7 +4,7 @@
 
 // extern int NUM_PEERS;
 
-Simulator::Simulator(unsigned int n) 
+Simulator::Simulator(ID_t n) 
 {
     NUM_PEERS = n;
     peers = std::vector<Peer>(n);
@@ -28,7 +28,7 @@ void Simulator::start(Ticks end_time){
         eventQ.pop();
 
         if(nexus -> timestamp <= end_time){
-            auto children = nexus -> callback(nexus -> timestamp);
+            auto children = nexus -> execute(nexus -> timestamp);
             for(auto &child : children){
                 if(child -> timestamp < end_time) eventQ.push(child);
             }

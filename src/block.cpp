@@ -188,12 +188,6 @@ void Tree::collectTxnInChain(std::unordered_set<TID_t> &txns, Node *n)
     }
 }
 
-//Return True if block is inserted
-/**
- * What should this function do? How should it behave?
- * Return true if inserted
- * False if could not insert or already present
- */
 int Tree::addBlk(Blk *blk, Ticks arrival)
 {
 
@@ -222,6 +216,12 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
             logerr("Tree::addBlk parent is Null after validation");
 
         Node *node = new Node(blk, p, p->chainLength + 1, arrival);
+
+        while(0){
+
+            //! Add logic to add orphaned blocks
+
+        }
 
         if (longest == NULL)
             logerr("Tree::addBlk longest should not be NULL");
