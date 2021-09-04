@@ -13,6 +13,10 @@ typedef unsigned long EID_t; // ID for peers
 typedef float Ticks; // Time Unit, Ticks because time_t wouldn't be allowed
 typedef double Size; // Size of blks/txns in units of 1 kbits
 
+#ifndef __UTILS_CPP__
+    extern ID_t NUM_PEERS;
+#endif
+
 double _exp(double mean = 1.0);
 
 template<typename T>

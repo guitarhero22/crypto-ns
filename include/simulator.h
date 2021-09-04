@@ -13,6 +13,8 @@ class Simulator{
         std::vector<Peer> peers;
         std::priority_queue<Event*, std::vector<Event*>, compare_event> eventQ; // Event Queue
         void start(Ticks); // Start Simulationc
+        // ~Simulator(){log("Simulator::destructor"); if(eventQ.empty()) log("Simulator::destructor EventQ Empty");}
+
 };
 
 #endif

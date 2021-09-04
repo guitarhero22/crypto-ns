@@ -8,7 +8,10 @@
 // An event will have a callback to invoke at the time event has to be executed
 
 class Event; //Forward declaration
-class EventGenerator{};
+class EventGenerator{
+    public:
+        // ~EventGenerator(){log("EventGenerator::destructor");}
+};
 typedef std::vector<Event*> (EventGenerator::*callback_t)(Ticks, EID_t);
 
 class Event{
@@ -20,12 +23,15 @@ class Event{
         Event(Ticks t):timestamp(t){};
         Event(Ticks t, EventGenerator* o, callback_t _play) : timestamp(t), obj(o), play(_play), ID(get_next_event()){};
         EID_t ID;
-        EventGenerator* obj;
+        EventGenerator* obj = NULL;
         callback_t play;
         std::vector<Event*> callback(Ticks t) {
             return ((*obj).*play)(t, ID);
+            obj = NULL;
         };
         Ticks timestamp; 
+
+        // ~Event(){log("Event::destructor"); return;}
 };
 
 class compare_event{

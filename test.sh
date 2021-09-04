@@ -1,3 +1,3 @@
 cd build
 cmake .. && cmake --build . && \
-./crypto-ns 5 1000
+./crypto-ns 2 1000

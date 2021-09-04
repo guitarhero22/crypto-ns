@@ -16,7 +16,6 @@
 
 typedef std::pair<Ticks, Msg*> pTM;
 
-extern int NUM_PEERS;
 class Peer; //forward Declaration
 /**
  * Messages will live in the link untill they reach the target
@@ -37,6 +36,8 @@ public:
     Ticks c; //link speed
     std::mt19937 rng;
     std::exponential_distribution<Ticks> d;
+
+    // ~Link(){log("Link::destructor");}
 };
 
 /**
@@ -77,7 +78,11 @@ public:
     // Mining
     BID_t mining_on = 0;
     EID_t mining_event = 0;
-    std::unordered_map<TID_t, Txn*> TxnForNxtBlk; // Will hold transactions for the next Block
+
+    // ~Peer(){
+    //     links.clear();
+    //     log("Peer::desctuctor");
+    // }
 };
 
 void ConnectGraphByRandomWalk(std::vector<Peer> &);

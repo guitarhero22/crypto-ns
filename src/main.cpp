@@ -20,4 +20,7 @@ int main(int argc, char* argv[]){
 
     Simulator s(numPeers);
     s.start(endTime);
+
+    log("End of main");
+    return 0;
 }

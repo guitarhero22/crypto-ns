@@ -2,7 +2,7 @@
 #include<iostream>
 #include<queue>
 
-extern int NUM_PEERS;
+// extern int NUM_PEERS;
 
 Simulator::Simulator(unsigned int n) 
 {
@@ -32,6 +32,10 @@ void Simulator::start(Ticks end_time){
             for(auto &child : children){
                 if(child -> timestamp < end_time) eventQ.push(child);
             }
-        }else break;
+        }else {
+            log(std::to_string(nexus->timestamp));
+        };
     }
+
+    log("Ending Simulation...");
 }
