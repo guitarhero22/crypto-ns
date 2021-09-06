@@ -236,8 +236,9 @@ public:
      * Checks if Block has already been received
      * 
      * @param bid Block ID
+     * @param parent to find orphan block by parent ID
      */
-    bool findBlk(BID_t bid);
+    bool findBlk(BID_t bid, BID_t parent = -1);
 
     /**
      * 
@@ -342,7 +343,7 @@ public:
     std::map<TID_t, Txn *> TxnForNxtBlk;      ///< Will hold transactions for the next Block
     std::unordered_set<TID_t> inBlkChain;     ///< The transactions which are in the longest chain
     std::unordered_map<BID_t, Node *> blks;   ///< To keep track of Blocks and Nodes
-    std::unordered_map<BID_t, Blk *> orphans; ///< To keep track of orphaned blocks
+    std::unordered_map<BID_t, std::unordered_map<BID_t, Blk *>> orphans; ///< To keep track of orphaned blocks
 };
 
 #endif

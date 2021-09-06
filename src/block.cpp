@@ -19,7 +19,6 @@ bool Tree::findTxn(TID_t tid)
     );
 }
 
-// Return True if Txn is inserted, false if it is already present
 bool Tree::addTxn(Txn *txn)
 {
     if (findTxn(txn->ID))
@@ -30,15 +29,26 @@ bool Tree::addTxn(Txn *txn)
     return true;
 }
 
-bool Tree::findBlk(BID_t bid)
+bool Tree::findBlk(BID_t bid, BID_t parent)
 {
-    return (
-        blks.find(bid) != blks.end());
+    if (blks.find(bid) != blks.end())
+        return true;
+    if (parent < 0)
+        return false;
+
+    auto par = orphans.find(parent); // Find Parent who has orphaned blocks
+    if (par != orphans.end())
+    {                                        //Parent present
+        auto orphan = par->second.find(bid); // Find the block in this parent's orphans
+        return orphan == par->second.end();
+    }
+
+    return false;
 }
 
 bool Tree::getBalances(Node *n)
 {
-    if (n == NULL)
+    if (n == NULL) // Base Case
     {
         if (n->blk->ID != 0)
             return false;
@@ -46,13 +56,13 @@ bool Tree::getBalances(Node *n)
         return true;
     }
 
-    if (n->blk->ID == balancesCalcOn)
-        return true; // Check if all balances are here
+    if (n->blk->ID == balancesCalcOn) // Base Case
+        return true;
 
-    if (!getBalances(n->parent))
-        return false; // Recurse
+    if (!getBalances(n->parent)) //Recurse
+        return false;
 
-    //Now calculate balances from this one
+    // Update balances from transactions in this Node
     auto &txns = n->blk->txns;
     for (auto &txn : txns)
     {
@@ -65,6 +75,7 @@ bool Tree::getBalances(Node *n)
         }
     }
 
+    // Update last Node on which balances are calculated
     balancesCalcOn = n->blk->ID;
 
     return true;
@@ -74,34 +85,37 @@ void Tree::collectValidTxns(std::map<TID_t, Txn *> &txns, Node *chain, std::map<
 {
 
     prep.clear();
-    if (!getBalances(chain))
+    if (!getBalances(chain)) // Update Balances to validate Transactions
         logerr("Peer::validTxns Error occured near getBalances");
 
     for (auto &txn : txns)
     {
-        if (txn.second->coinbase)
+        if (txn.second->coinbase) // Check Sanity
             logerr("Tree::validTxns with prep, coinbase should not be here");
 
-        if (balances[txn.second->idx] < txn.second->amt)
+        if (balances[txn.second->idx] < txn.second->amt) // Detech Invalid Txn
             continue;
+
+        // Update Balances from this Transaction
         balances[txn.second->idx] -= txn.second->amt;
         balances[txn.second->idy] += txn.second->amt;
 
+        //Add if valid
         prep[txn.first] = txn.second;
     }
 
-    balancesCalcOn = 0;
+    balancesCalcOn = 0; // Because we are messing with balances vector
     return;
 }
 
 bool Tree::validTxns(std::map<TID_t, Txn *> &txns, Node *chain)
 {
-    if (!getBalances(chain))
+    if (!getBalances(chain)) // Sanity Check
         logerr("Peer::validTxns Error occured near getBalances");
 
     for (auto &txn : txns)
     {
-        if (txn.second->idx >= 0)
+        if (!txn.second->coinbase)
         {
             if (balances[txn.second->idx] < txn.second->amt)
                 return false;
@@ -110,7 +124,7 @@ bool Tree::validTxns(std::map<TID_t, Txn *> &txns, Node *chain)
         balances[txn.second->idy] += txn.second->amt;
     }
 
-    balancesCalcOn = 0;
+    balancesCalcOn = 0; //Because we are messing with balances vector
     return true;
 }
 
@@ -194,6 +208,9 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     if (findBlk(blk->ID))
         return DONT_SEND;
 
+    if (findBlk(blk->ID, blk->parent))
+        return DONT_SEND;
+
     int validity = validateBlk(blk);
 
     if (validity == INVALID)
@@ -201,7 +218,7 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
 
     if (validity == ORPHAN)
     {
-        orphans[blk->parent] = blk;
+        orphans[blk->parent][blk->ID] = blk;
         return SEND;
     }
 
@@ -217,10 +234,10 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
 
         Node *node = new Node(blk, p, p->chainLength + 1, arrival);
 
-        while(0){
+        while (0)
+        {
 
             //! Add logic to add orphaned blocks
-
         }
 
         if (longest == NULL)
