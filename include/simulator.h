@@ -31,9 +31,13 @@ public:
      * Initializes some important structures and builds set up for the Simulation
      * 
      * @param n Number of peers to simulate
+     * @param z % of nodes slow
+     * @param Tx mean interarrival time of TxnscA
+     * @param meanTk vector of mean of interarrival time of blocks for each node
+     *
      * @returns Instance of the Simulator Class
      */
-    Simulator(ID_t n);
+    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &meanTk);
 
     /**
      * Start the Simulation
@@ -63,7 +67,8 @@ public:
      * @returns status
      */
     int trees2dot(std::string basename);
-
+    int peerDump(std::string basename);
+    int resultDump(std::string basename);
 
     /**
      * Vectore holding the peers
@@ -76,7 +81,8 @@ public:
      * A heap data structure, so that the event at the top always has the smallest timestamp
      */
     std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
-    int num_peers; // Number of peer
+    BID_t num_peers; // Number of peer
+    float z;
 };
 
 #endif

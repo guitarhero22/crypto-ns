@@ -1,12 +1,15 @@
 #include "block.h"
 #include "utils.h"
 #include <vector>
+#include <queue>
 
 Size Txn::DEFAULT_SIZE = 8;
+
 TID_t Txn::NUM_TXNS = 0;
 BID_t Blk::NUM_BLKS = 0;
 Size Blk::MAX_SIZE = 8000;
-Blk *Blk::genesis = new Blk(-1, 0, 0);
+TID_t Blk::MAX_TXNS = 999; // Max number of Transactions that can fit in a block
+Blk *Blk::genesis = new Blk(-1, -1, 0);
 
 BID_t Tree::balancesCalcOn = 0;
 std::vector<coin_t> Tree::balances;
@@ -92,11 +95,12 @@ void Tree::collectValidTxns(std::map<TID_t, Txn *> &txns, Node *chain, std::map<
     if (!getBalances(chain)) // Update Balances to validate Transactions
         logerr("Peer::validTxns Error occured near getBalances");
 
-    for (auto balance : balances)
-
-    // if(txns.empty()) log("Txns::collectValidTxns Transactions are empty");
     for (auto &txn : txns)
     {
+
+        if (prep.size() >= Blk::MAX_SIZE)
+            break; // To ensure that block size is < 8000 kb
+
         if (txn.second->coinbase) // Check Sanity
             logerr("Tree::collectValidTxns with prep, coinbase should not be here");
 
@@ -244,7 +248,7 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     if (validity == ORPHAN)
     {
         // log("Blk " + tos(blk->ID) + " is orphan");
-        orphans[blk->parent][blk->ID] = blk;
+        orphans[blk->parent][blk->ID] = new Node(blk, NULL, 0, arrival);
         return SEND;
     }
 
@@ -260,46 +264,65 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
             logerr("Tree::addBlk parent is Null after validation");
 
         Node *node = new Node(blk, p, p->chainLength + 1, arrival);
+        blks[blk->ID] = node;
 
-        // while (0)
-        // {
-
-        //     //! Add logic to add orphaned blocks
-        // }
+        if (blk->creator == creator)
+            blksByMe++; //Update the count of blocks made by me
 
         if (longest == NULL)
             logerr("Tree::addBlk longest should not be NULL");
 
-        blks[blk->ID] = node;
-        // log("Blk " + tos(blk->ID) + " added, the parent is " + tos(blk->parent));
+        Node *longer = longest;
+        if (node->chainLength > longer->chainLength)
+            longer = node;
 
-        if (longest == p)
+        std::queue<BID_t> Q;
+        Q.push(blk->ID);
+        while (!Q.empty())
         {
-            for (auto &txn : blk->txns)
+            BID_t was_lost = Q.front();
+            Q.pop();
+
+            if (orphans.find(was_lost) == orphans.end())
+                continue;
+
+            auto parent_node = blks[was_lost];
+
+            for (auto &child : orphans[was_lost])
             {
-                if (!txn.second->coinbase)
-                    txnPool.erase(txn.first);
+                if (findBlk(child.first) == PRESENT)
+                {
+                    log("Tree::addBlk Something Unusual, orphan already present");
+                    continue;
+                }
+                Q.push(child.first);
+                child.second->chainLength = parent_node->chainLength + 1;
+                child.second->parent = parent_node;
+
+                blks[child.first] = child.second;
+
+                if (child.second->chainLength > longer->chainLength)
+                {
+                    longer = child.second;
+                }
+                else if (child.second->chainLength == longer->chainLength)
+                {
+                    if (longer->arrival > child.second->arrival)
+                        longer = child.second;
+                }
             }
 
-            for (auto &txn : blk->txns)
-            {
-                if (!txn.second->coinbase)
-                    inBlkChain.insert(txn.first);
-            }
-
-            longest = node;
-
-            return NEW_LONGEST_CHAIN;
+            orphans.erase(was_lost); // No longer orphan
         }
 
-        if (node->chainLength > longest->chainLength)
+        if (longer != longest)
         {
 
             collectTxnInChain(txnPool, longest);
 
             inBlkChain.clear();
 
-            longest = node;
+            longest = longer;
             collectTxnInChain(inBlkChain, longest);
 
             for (auto &tid : inBlkChain)
@@ -316,12 +339,14 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     return DONT_KNOW;
 }
 
-int Tree::_2dot(std::ofstream &file)
+int Tree::_2dot(std::ofstream &file, ID_t creator)
 {
     if (!file.is_open())
         return -1;
 
     file << "graph {\n";
+
+    file << "label=\"Tree of Blocks\"\n";
 
     for (auto blk : orphans)
     {
@@ -333,10 +358,64 @@ int Tree::_2dot(std::ofstream &file)
 
     for (auto blk : blks)
     {
+        file << blk.first << " [label=\""
+             << blk.second->blk->ID
+             << "\\nsz:" << blk.second->blk->size
+             << "\\na:" << blk.second->arrival
+             << "\\nc:" << blk.second->blk->creator
+             << "\"";
+
+        if (blk.second->parent != NULL && blk.second->arrival < blk.second->parent->arrival && blk.second->blk->creator == creator)
+            file << ", color=purple";
+        else if (blk.second->parent != NULL && blk.second->arrival < blk.second->parent->arrival)
+            file << " ,color=red";
+        else if (blk.second->blk->creator == creator)
+            file << " ,color=green";
+
+        file << ", shape=square]\n";
+    }
+
+    for (auto blk : blks)
+    {
+        if (blk.first == 0)
+            continue;
         file << blk.first << " -- " << blk.second->blk->parent << "\n";
     }
 
     file << "}";
+
+    return 0;
+}
+
+int Tree::_2dump(std::ofstream &file, ID_t creator)
+{
+    if (!file.is_open())
+        return -1;
+
+    std::multiset<Node*, compare_node_by_arrival> st;
+
+
+    file << "BlkID,BlkNum,arrivalTime,parentID\n";
+    for (auto blk : blks)
+    {
+        st.insert(blk.second);
+    }
+
+    for (auto blk : orphans)
+    {
+        for (auto orphan : blk.second)
+        {
+            st.insert(orphan.second);
+        }
+    }
+
+    for(auto node : st){
+        file << node -> blk -> ID 
+            << "," << node -> chainLength
+            << "," << node -> arrival
+            << "," << node -> blk -> parent
+            << "\n";
+    }
 
     return 0;
 }

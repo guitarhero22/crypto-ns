@@ -8,8 +8,8 @@
 #include <chrono>
 #include <iostream>
 
-typedef long ID_t;  ///< ID for peers
-typedef unsigned long BID_t; ///< ID for Blocks
+typedef long ID_t;           ///< ID for peers
+typedef long BID_t; ///< ID for Blocks
 typedef unsigned long TID_t; ///< ID for Txns
 typedef unsigned int coin_t; ///< For Number of Coins
 typedef unsigned long EID_t; ///< ID for peers

@@ -65,6 +65,25 @@ public:
 };
 
 /**
+ * milestone for marking important times
+ */
+class Milestone : public EventGenerator
+{
+public:
+    /**
+     * @param _time milestone time
+     * @param eid Event ID
+     * 
+     * @returns Events generated
+     */
+    std::vector<Event *> plant(Ticks _time, EID_t eid)
+    {
+        std::cout << "." << std::flush;
+        return std::vector<Event *>();
+    };
+};
+
+/**
  * For sorting the Events, increasing timestamps in the Event Queue
  */
 class compare_event

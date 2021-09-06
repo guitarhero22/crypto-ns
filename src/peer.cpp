@@ -47,7 +47,6 @@ std::vector<Event *> Link::sent(Ticks sentTime, EID_t eid)
 // Peer
 std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
 {
-    log("Peer::INIT Inititlizing...");
     int sz = peers.size();
     std::vector<Event *> initEvents(2 * sz, NULL);
     for (int i = 0; i < sz; ++i)
@@ -61,7 +60,7 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
     log("Peers Initialized");
 };
 
-Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id)
+Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id), tree(Tree(id))
 {
     rng = std::mt19937((std::random_device())());
     nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);
@@ -89,7 +88,7 @@ std::vector<Event *> Peer::rcvMsg(Peer *src, Msg *msg, Ticks rcvTime)
 std::vector<Event *> Peer::rcvTxn(Peer *src, Txn *txn, Ticks rcvTime)
 {
     // if (src != this)
-        // log("Txn Recvd by " + tos(ID) + " at " + tos(rcvTime));
+    // log("Txn Recvd by " + tos(ID) + " at " + tos(rcvTime));
 
     std::vector<Event *> ret;
 
@@ -135,7 +134,7 @@ std::vector<Event *> Peer::rcvBlk(Peer *src, Blk *blk, Ticks rcvTime)
 {
 
     // if (src != this)
-        // log("Blk Recvd by " + tos(ID) + " at " + tos(rcvTime));
+    // log("Blk Recvd by " + tos(ID) + " at " + tos(rcvTime));
 
     std::vector<Event *> ret;
     int what_should_I_do_with_it_LOL = tree.addBlk(blk, rcvTime);
@@ -182,9 +181,9 @@ std::vector<Event *> Peer::genBlk(Ticks genTime, EID_t eid)
     //Start Mining Session for the next block
     // Event *nxtEvent = start_mining_session(genTime);
     // if (nxtEvent != NULL)
-        // ret.push_back(nxtEvent);
+    // ret.push_back(nxtEvent);
     // else
-        // logerr("Peer::genBlk nxtEvent is NULL");
+    // logerr("Peer::genBlk nxtEvent is NULL");
 
     return ret;
 }

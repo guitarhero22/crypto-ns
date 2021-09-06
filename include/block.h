@@ -124,7 +124,8 @@ class Blk : public Msg
 public:
     static BID_t NUM_BLKS; ///< To keep a count of all the blocks created
     static Size MAX_SIZE;  ///< MAX SIZE of a block
-    static Blk *genesis;   ///< Pointer to the genesis block
+    static TID_t MAX_TXNS;
+    static Blk *genesis; ///< Pointer to the genesis block
 
     /**
      * Gets the next available Block ID 
@@ -143,6 +144,11 @@ public:
      * so that everyone can use the pointer to refer to the block to save
      * space during simulation
      * 
+     * @param c creator of block
+     * @param txns transactions in the block
+     * @param parent parent block
+     * @param creationTime self explanatory
+     * 
      * @returns pointer to a newly created block
      */
     static Blk *new_blk(ID_t c, std::map<TID_t, Txn *> &txns, BID_t parent, Ticks creationTime)
@@ -158,6 +164,11 @@ public:
     /**
      * Constructor
      * 
+     * @param c creator of block
+     * @param txns transactions in the block
+     * @param parent parent block
+     * @param creationTime self explanatory
+     * 
      * @returns instance of Blk Class
      */
     Blk(ID_t c, std::map<TID_t, Txn *> &_txns, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(getNxtBlk()), timestamp(creationTime), txns(_txns), parent(_parent), creator(c)
@@ -167,8 +178,11 @@ public:
         size += Txn::DEFAULT_SIZE * txns.size();
     };
 
-    /**
-     * Constructor
+    /** Constructor
+     * 
+     * @param c creator of block
+     * @param parent parent block
+     * @param creationTime self explanatory
      * 
      * @returns instance of Blk Class
      */
@@ -197,6 +211,13 @@ public:
 
     /**
      * Constructor
+     * 
+     * @param b block pointer
+     * @param p parent node pointer
+     * @param l chain length
+     * @param a arrival time of block
+     * 
+     * @returns instance of node class
      */
     Node(Blk *b, Node *p, BID_t l, Ticks a) : blk(b), parent(p), chainLength(l), arrival(a) {}
     Blk *blk = NULL;       ///< The block that the Node is holding
@@ -217,7 +238,8 @@ public:
     static BID_t balancesCalcOn;                           ///< The last Block ID on which balances were calculated
     static void INIT(void) { balances.resize(NUM_PEERS); } ///< Initilize
 
-    Tree()
+    Tree() {}
+    Tree(ID_t _creator) : creator(_creator)
     {
         auto node = new Node(Blk::genesis, NULL, 0, 0);
         blks[Blk::genesis->ID] = node;
@@ -334,17 +356,38 @@ public:
      * Prints the tree to a dot file
      * 
      * @param file the output file stream
+     * @param creator Id of the creator of the Tree
+     * 
      * @returns status
      */
-    int _2dot(std::ofstream &file);
+    int _2dot(std::ofstream &file, ID_t creator);
 
-    Node *genesis = NULL;                     ///< the node containing the genesis block
-    Node *longest = NULL;                     ///< pointer to the last Node in longest Block Chain
-    std::map<TID_t, Txn *> txnPool;           ///< The transaction Pool, the transactions which are not in the longest chain
-    std::map<TID_t, Txn *> TxnForNxtBlk;      ///< Will hold transactions for the next Block
-    std::unordered_set<TID_t> inBlkChain;     ///< The transactions which are in the longest chain
-    std::unordered_map<BID_t, Node *> blks;   ///< To keep track of Blocks and Nodes
-    std::unordered_map<BID_t, std::unordered_map<BID_t, Blk *>> orphans; ///< To keep track of orphaned blocks
+    /**
+     * Prints the tree to a dot file
+     * 
+     * @param file the output file stream
+     * @param creator Id of the creator of the Tree
+     * 
+     * @returns status
+     */
+    int _2dump(std::ofstream &file, ID_t creator);
+
+    ID_t creator; ///< Creator of the Tree
+    BID_t blksByMe = 0;
+    Node *genesis = NULL;                                                 ///< the node containing the genesis block
+    Node *longest = NULL;                                                 ///< pointer to the last Node in longest Block Chain
+    std::map<TID_t, Txn *> txnPool;                                       ///< The transaction Pool, the transactions which are not in the longest chain
+    std::map<TID_t, Txn *> TxnForNxtBlk;                                  ///< Will hold transactions for the next Block
+    std::unordered_set<TID_t> inBlkChain;                                 ///< The transactions which are in the longest chain
+    std::unordered_map<BID_t, Node *> blks;                               ///< To keep track of Blocks and Nodes
+    std::unordered_map<BID_t, std::unordered_map<BID_t, Node *>> orphans; ///< To keep track of orphaned blocks
+};
+
+class compare_node_by_arrival{
+    public:
+    bool operator() (Node * a, Node * b){
+        return a -> arrival < b -> arrival;
+    }
 };
 
 #endif
