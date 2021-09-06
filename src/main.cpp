@@ -19,7 +19,14 @@ int main(int argc, char* argv[]){
     Ticks endTime = std::stof(std::string(argv[2]));
 
     Simulator s(numPeers);
+
+    std::ofstream P2PDot("P2P.dot");
+    s.P2P2dot(P2PDot);
+    P2PDot.close();
+
     s.start(endTime);
+
+    s.trees2dot("dots/");
 
     log("End of main");
     return 0;

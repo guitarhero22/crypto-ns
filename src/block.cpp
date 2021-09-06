@@ -48,10 +48,9 @@ bool Tree::findBlk(BID_t bid, BID_t parent)
 
 bool Tree::getBalances(Node *n)
 {
-    if (n == NULL) // Base Case
+
+    if (n == NULL || n->blk->ID == 0) // Base Case
     {
-        if (n->blk->ID != 0)
-            return false;
         balances.assign(NUM_PEERS, 0);
         return true;
     }
@@ -84,14 +83,22 @@ bool Tree::getBalances(Node *n)
 void Tree::collectValidTxns(std::map<TID_t, Txn *> &txns, Node *chain, std::map<TID_t, Txn *> &prep)
 {
 
+    if (chain == NULL)
+        logerr("Tree:collectValidTxns chain is NULL");
+
     prep.clear();
+
+    // log("Tree::collectValidTxns Updating Balances");
     if (!getBalances(chain)) // Update Balances to validate Transactions
         logerr("Peer::validTxns Error occured near getBalances");
 
+    for (auto balance : balances)
+
+    // if(txns.empty()) log("Txns::collectValidTxns Transactions are empty");
     for (auto &txn : txns)
     {
         if (txn.second->coinbase) // Check Sanity
-            logerr("Tree::validTxns with prep, coinbase should not be here");
+            logerr("Tree::collectValidTxns with prep, coinbase should not be here");
 
         if (balances[txn.second->idx] < txn.second->amt) // Detech Invalid Txn
             continue;
@@ -118,7 +125,14 @@ bool Tree::validTxns(std::map<TID_t, Txn *> &txns, Node *chain)
         if (!txn.second->coinbase)
         {
             if (balances[txn.second->idx] < txn.second->amt)
+            {
+                // log("Tree::validTxns txn invalid: tid: " + tos(txn.first) +
+                //     " to: " + tos(txn.second -> idy)
+                //     + " from: " + tos(txn.second -> idx)
+                //     + " amt: " + tos(txn.second -> amt)
+                //     + " bal: " + tos(balances[txn.second -> idx]));
                 return false;
+            }
             balances[txn.second->idx] -= txn.second->amt;
         }
         balances[txn.second->idy] += txn.second->amt;
@@ -137,7 +151,7 @@ int Tree::validateBlk(Blk *blk)
         return PRESENT;
 
     Node *parent = blks[blk->parent];
-    if (validTxns(blk->txns, parent))
+    if (!validTxns(blk->txns, parent))
         return INVALID;
 
     return VALID;
@@ -146,21 +160,27 @@ int Tree::validateBlk(Blk *blk)
 BID_t Tree::startMining(ID_t creator, Ticks startTime)
 {
 
+    // log("Tree::startMining starting mining for " + std::to_string(creator));
     TxnForNxtBlk.clear();
 
+    // log("Tree::startMining collecting Txns for " + std::to_string(creator));
     collectValidTxns(txnPool, longest, TxnForNxtBlk);
-    Txn *coinbase = Txn::new_txn(creator, creator, COINBASE, startTime, true);
+    // log("Tree::startMining Transactions Collected " + std::to_string(creator));
 
-    log("coinbase_id " + std::to_string(coinbase->ID));
+    Txn *coinbase = Txn::new_txn(creator, creator, COINBASE, startTime, true);
+    // log("coinbase_id " + std::to_string(coinbase->ID));
+
     TxnForNxtBlk[coinbase->ID] = coinbase;
 
+    if (longest == NULL)
+        logerr("Tree:startMining longest is NULL");
     return longest->blk->ID;
 }
 
 Blk *Tree::mineBlk(ID_t creator, BID_t parent, Ticks creationTime)
 {
-
     auto blk = Blk::new_blk(creator, TxnForNxtBlk, parent, creationTime);
+    // log("Block " + tos(blk->ID) + " Mined by " + tos(creator) + " on " + tos(parent) + " not: " + tos(TxnForNxtBlk.size()));
     TxnForNxtBlk.clear();
 
     return blk;
@@ -170,8 +190,8 @@ void Tree::collectTxnInChain(std::map<TID_t, Txn *> &txns, Node *n)
 {
     if (n == NULL)
     {
-        if (n->blk->ID != 0)
-            logerr("Tree::collectTxnInChain root ID should not be 0");
+        // if (n->blk->ID != 0)
+        // logerr("Tree::collectTxnInChain root ID should not be 0");
         return;
     }
 
@@ -179,7 +199,8 @@ void Tree::collectTxnInChain(std::map<TID_t, Txn *> &txns, Node *n)
 
     for (auto &txn : n->blk->txns)
     {
-        txns[txn.first] = txn.second;
+        if (!txn.second->coinbase)
+            txns[txn.first] = txn.second;
     }
 
     return;
@@ -189,8 +210,6 @@ void Tree::collectTxnInChain(std::unordered_set<TID_t> &txns, Node *n)
 {
     if (n == NULL)
     {
-        if (n->blk->ID != 0)
-            logerr("Tree::collectTxnInChain root ID should not be 0");
         return;
     }
 
@@ -205,6 +224,9 @@ void Tree::collectTxnInChain(std::unordered_set<TID_t> &txns, Node *n)
 int Tree::addBlk(Blk *blk, Ticks arrival)
 {
 
+    if (blk == NULL)
+        logerr("Tree::addBlk blk is NULL");
+
     if (findBlk(blk->ID))
         return DONT_SEND;
 
@@ -214,10 +236,14 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     int validity = validateBlk(blk);
 
     if (validity == INVALID)
+    {
+        // log("Block " + tos(blk->ID) + " Invalid");
         return DONT_SEND;
+    }
 
     if (validity == ORPHAN)
     {
+        // log("Blk " + tos(blk->ID) + " is orphan");
         orphans[blk->parent][blk->ID] = blk;
         return SEND;
     }
@@ -227,6 +253,7 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
 
     if (validity == VALID)
     {
+        // log("Blk " + tos(blk->ID) + " is valid, adding to tree");
         Node *p = blks[blk->parent];
 
         if (p == NULL)
@@ -234,14 +261,17 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
 
         Node *node = new Node(blk, p, p->chainLength + 1, arrival);
 
-        while (0)
-        {
+        // while (0)
+        // {
 
-            //! Add logic to add orphaned blocks
-        }
+        //     //! Add logic to add orphaned blocks
+        // }
 
         if (longest == NULL)
             logerr("Tree::addBlk longest should not be NULL");
+
+        blks[blk->ID] = node;
+        // log("Blk " + tos(blk->ID) + " added, the parent is " + tos(blk->parent));
 
         if (longest == p)
         {
@@ -284,4 +314,29 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     }
 
     return DONT_KNOW;
+}
+
+int Tree::_2dot(std::ofstream &file)
+{
+    if (!file.is_open())
+        return -1;
+
+    file << "graph {\n";
+
+    for (auto blk : orphans)
+    {
+        for (auto orphan : blk.second)
+        {
+            file << orphan.first << "\n";
+        }
+    }
+
+    for (auto blk : blks)
+    {
+        file << blk.first << " -- " << blk.second->blk->parent << "\n";
+    }
+
+    file << "}";
+
+    return 0;
 }

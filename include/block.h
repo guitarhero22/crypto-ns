@@ -7,19 +7,20 @@
 #include <unordered_set>
 #include <map>
 #include <set>
+#include <fstream>
 
 #define PRESENT 3
 #define ORPHAN 2
 #define INVALID 1
 #define VALID 0
 
-#define NEW_LONGEST_CHAIN 0
-#define SEND 1
-#define DONT_SEND 2
-#define DONT_KNOW 3
+#define NEW_LONGEST_CHAIN 4
+#define SEND 5
+#define DONT_SEND 6
+#define DONT_KNOW 7
 
-#define BLOCK 0
-#define TXN 1
+#define BLOCK 8
+#define TXN 9
 
 #define COINBASE 50 ///< Default COINBASE TXN AMOUNT
 
@@ -329,13 +330,13 @@ public:
      */
     BID_t startMining(ID_t id, Ticks timestamp);
 
-    BID_t getLastId()
-    {
-        if (longest != NULL)
-            return (*longest).blk->ID;
-        else
-            return -1;
-    };
+    /**
+     * Prints the tree to a dot file
+     * 
+     * @param file the output file stream
+     * @returns status
+     */
+    int _2dot(std::ofstream &file);
 
     Node *genesis = NULL;                     ///< the node containing the genesis block
     Node *longest = NULL;                     ///< pointer to the last Node in longest Block Chain

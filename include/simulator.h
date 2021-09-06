@@ -10,6 +10,7 @@
 #include "peer.h"
 #include <vector>
 #include <queue>
+#include <fstream>
 
 //Simulator class which will have a single event queue/heap/set for all the events and will execute these events one by one
 
@@ -35,18 +36,6 @@ public:
     Simulator(ID_t n);
 
     /**
-     * Vectore holding the peers
-     */
-    std::vector<Peer> peers;
-
-    /**
-     * Event Queue.
-     * 
-     * A heap data structure, so that the event at the top always has the smallest timestamp
-     */
-    std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
-
-    /**
      * Start the Simulation
      * 
      * This function continuously picks element from the Event Queue, and calls the `callback` method in the Event.
@@ -57,7 +46,37 @@ public:
      * @param endTime When to end the simulation
      * @return Nothing
      */
-    void start(Ticks endTime); // Start Simulationc
+    void start(Ticks endTime); // Start Simulation
+
+    /**
+     * Print the p2p Network to a dot file
+     * 
+     * @param file output file stream
+     * @returns status
+     */
+    int P2P2dot(std::ofstream &file);
+
+    /**
+     * Print all the trees to a dot file
+     * 
+     * @param basename basename for output
+     * @returns status
+     */
+    int trees2dot(std::string basename);
+
+
+    /**
+     * Vectore holding the peers
+     */
+    std::vector<Peer> peers;
+
+    /**
+     * Event Queue.
+     * 
+     * A heap data structure, so that the event at the top always has the smallest timestamp
+     */
+    std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
+    int num_peers; // Number of peer
 };
 
 #endif
