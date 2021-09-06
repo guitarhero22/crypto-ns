@@ -11,5 +11,5 @@ Do the following:
 $ mkdir build
 $ cd build
 $ cmake .. && cmake --build .
-$ ./crytpo-ns 1000
+$ ./crytpo-ns 10 1000
 ```
