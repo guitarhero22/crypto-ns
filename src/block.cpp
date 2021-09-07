@@ -8,7 +8,7 @@ Size Txn::DEFAULT_SIZE = 8;
 TID_t Txn::NUM_TXNS = 0;
 BID_t Blk::NUM_BLKS = 0;
 Size Blk::MAX_SIZE = 8000;
-TID_t Blk::MAX_TXNS = 999; // Max number of Transactions that can fit in a block
+TID_t Blk::MAX_TXNS = 998; // Max number of Transactions that can fit in a block
 Blk *Blk::genesis = new Blk(-1, -1, 0);
 
 BID_t Tree::balancesCalcOn = 0;
