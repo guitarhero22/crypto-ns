@@ -34,10 +34,11 @@ public:
      * @param z % of nodes slow
      * @param Tx mean interarrival time of TxnscA
      * @param meanTk vector of mean of interarrival time of blocks for each node
-     *
+     * @param m for Barabasi-Albert Algorithm
+     * 
      * @returns Instance of the Simulator Class
      */
-    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &meanTk);
+    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &meanTk, ID_t m);
 
     /**
      * Start the Simulation
@@ -51,6 +52,26 @@ public:
      * @return Nothing
      */
     void start(Ticks endTime); // Start Simulation
+
+   /**
+     * To Sample a Scale Free Newtork
+     * 
+     * @param Number of peers to consider
+     * @param m initial set size
+     */
+    void ConnectGraphByBarbasiAlbert(ID_t n, ID_t m = 2);
+
+    /**
+     * To build the Netwoek Topology 
+     * 
+     * @param Number of peers to consider
+     */
+    void ConnectGraphByRandomWalk(ID_t);
+
+    /**
+     * Choose Slow Nodes
+     */
+    void chooseSlowNodes();
 
     /**
      * Print the p2p Network to a dot file
@@ -67,7 +88,18 @@ public:
      * @returns status
      */
     int trees2dot(std::string basename);
+
+    /**
+     * Print all the trees to a dump file
+     * 
+     * @param basename basename for output
+     * @returns status
+     */
     int peerDump(std::string basename);
+
+    /**
+     * Prints other results
+     */
     int resultDump(std::string basename);
 
     /**
@@ -81,8 +113,8 @@ public:
      * A heap data structure, so that the event at the top always has the smallest timestamp
      */
     std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
-    BID_t num_peers; // Number of peer
-    float z;
+    BID_t num_peers = 0; // Number of peer
+    float z = 0;
 };
 
 #endif

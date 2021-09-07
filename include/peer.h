@@ -198,11 +198,4 @@ public:
     EID_t mining_event = 0; ///< The event ID which will invoke this peer for mining the next block
 };
 
-/**
- * To build the Netwoek Topology 
- * 
- * @param peers Conainer for peers
- */
-void ConnectGraphByRandomWalk(std::vector<Peer> &peers);
-
 #endif

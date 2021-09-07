@@ -31,9 +31,14 @@ The executable takes in the path to a config file which contains the simulation 
 * ***Tx*** is the mean transaction time.
 * ***Sim Time*** is the simulation time
 * ***T_k*** is the mean of interarrival of blocks for the k-th node
+* ***m*** initial set size for Barabase-Albert Algorithm 
 
 ## Logs and Graphs
 
 For getting the logs and graphs, please make `dumps` and `dots` directorys in your working directory. 
+
+In the `dumps` folder, the pees will dump their trees that they had at 60 seconds before the simulation ended
+
+In the `dots` folder we generate `.dot` files, which can be used to visualize the trees.
 
 Now, run the binary in the same directory.

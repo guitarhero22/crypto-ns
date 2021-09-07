@@ -28,11 +28,11 @@ int main(int argc, char* argv[]){
     else
         logerr("Could Not Open Configuration File");
 
-    ID_t numPeers;
+    ID_t numPeers, m;
     double z;
     Ticks Tx, endTime;
     
-    config >> numPeers >> z >> Tx >> endTime;
+    config >> numPeers >> z >> Tx >> endTime >> m;
 
     std::vector<Ticks>meanTk(numPeers);
 
@@ -41,6 +41,7 @@ int main(int argc, char* argv[]){
     log("z: " + tos(z));
     log("Tx: " + tos(Tx));
     log("endTime: " + tos(endTime));
+    log("m: " + tos(m));
 
     log("");
 
@@ -51,7 +52,7 @@ int main(int argc, char* argv[]){
 
     log("*************************\n");
 
-    Simulator s(numPeers, z, Tx, meanTk);
+    Simulator s(numPeers, z, Tx, meanTk, m);
 
     std::ofstream P2PDot("P2P.dot");
     s.P2P2dot(P2PDot);
