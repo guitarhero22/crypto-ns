@@ -225,6 +225,22 @@ void Tree::collectTxnInChain(std::unordered_set<TID_t> &txns, Node *n)
     }
 }
 
+BID_t Tree::blocksInChainById(ID_t creator){
+
+    if(longest == NULL) return 0;
+
+    BID_t ret = 0;
+    Node* node = longest;
+    while(node != NULL){
+        if(node -> blk -> ID == 0) break;
+        if(node -> blk -> creator == creator) ret++;
+
+        node = node -> parent;
+    }
+    
+    return ret;
+}
+
 int Tree::addBlk(Blk *blk, Ticks arrival)
 {
 
@@ -248,6 +264,7 @@ int Tree::addBlk(Blk *blk, Ticks arrival)
     if (validity == ORPHAN)
     {
         // log("Blk " + tos(blk->ID) + " is orphan");
+        orphansRcvd ++;
         orphans[blk->parent][blk->ID] = new Node(blk, NULL, 0, arrival);
         return SEND;
     }
@@ -361,7 +378,7 @@ int Tree::_2dot(std::ofstream &file, ID_t creator)
         file << blk.first << " [label=\""
              << blk.second->blk->ID
              << "\\nsz:" << blk.second->blk->size
-             << "\\na:" << blk.second->arrival
+             << "\\na:" << ticks2str(blk.second->arrival)
              << "\\nc:" << blk.second->blk->creator
              << "\"";
 
@@ -395,7 +412,7 @@ int Tree::_2dump(std::ofstream &file, ID_t creator)
     std::multiset<Node*, compare_node_by_arrival> st;
 
 
-    file << "BlkID,BlkNum,arrivalTime,parentID\n";
+    file << "BlkID,BlkNum,arrivalTime(min:secs),parentID\n";
     for (auto blk : blks)
     {
         st.insert(blk.second);
@@ -412,7 +429,7 @@ int Tree::_2dump(std::ofstream &file, ID_t creator)
     for(auto node : st){
         file << node -> blk -> ID 
             << "," << node -> chainLength
-            << "," << node -> arrival
+            << "," << ticks2str(node -> arrival)
             << "," << node -> blk -> parent
             << "\n";
     }

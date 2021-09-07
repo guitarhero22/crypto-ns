@@ -68,4 +68,12 @@ void logerr(std::string str);
  */
 void log(std::string str);
 
+/**
+ * Ticks to readable time 
+ * 
+ * @param time Ticks
+ */
+std::string ticks2str(Ticks time);
+
+
 #endif

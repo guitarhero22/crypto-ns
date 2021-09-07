@@ -54,7 +54,7 @@ int main(int argc, char* argv[]){
 
     Simulator s(numPeers, z, Tx, meanTk, m);
 
-    std::ofstream P2PDot("P2P.dot");
+    std::ofstream P2PDot("dots/P2P.dot");
     s.P2P2dot(P2PDot);
     P2PDot.close();
 

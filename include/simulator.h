@@ -38,7 +38,7 @@ public:
      * 
      * @returns Instance of the Simulator Class
      */
-    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &meanTk, ID_t m);
+    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &_meanTk, ID_t m);
 
     /**
      * Start the Simulation
@@ -114,6 +114,7 @@ public:
      */
     std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
     BID_t num_peers = 0; // Number of peer
+    std::vector<Ticks> meanTk;
     float z = 0;
 };
 

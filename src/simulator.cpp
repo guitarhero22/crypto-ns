@@ -6,7 +6,7 @@
 
 // extern int NUM_PEERS;
 
-Simulator::Simulator(ID_t n, float _z, Ticks Tx, std::vector<Ticks> &meanTk, ID_t m) : num_peers(n), z(_z)
+Simulator::Simulator(ID_t n, float _z, Ticks Tx, std::vector<Ticks> &_meanTk, ID_t m) : num_peers(n), z(_z), meanTk(_meanTk)
 {
     NUM_PEERS = n;
     peers = std::vector<Peer>(n);
@@ -28,8 +28,6 @@ Simulator::Simulator(ID_t n, float _z, Ticks Tx, std::vector<Ticks> &meanTk, ID_
             continue;
         eventQ.push(e);
     }
-
-    
 }
 
 void Simulator::start(Ticks end_time)
@@ -37,7 +35,8 @@ void Simulator::start(Ticks end_time)
     auto milestone = new Milestone();
 
     //Putting Milestones
-    for(int i = 0; i < 10; ++i){
+    for (int i = 0; i < 10; ++i)
+    {
         eventQ.push(new Event((i + 1) * end_time / 10, milestone, reinterpret_cast<callback_t>(&Milestone::plant)));
     }
 
@@ -126,45 +125,55 @@ int Simulator::peerDump(std::string basename)
     return 0;
 }
 
-int Simulator::resultDump(std::string basename){
+int Simulator::resultDump(std::string basename)
+{
     std::ofstream file(basename + "results.dump");
 
-   file << "\nResults:\n";
+    // file << "\nResults:\n";
     BID_t tot = 0;
 
-    file << "Peer ID: <peer's blocks> <% of total blocks>\n";
-    BID_t chainL = 1;
-    for(auto peer: peers){
-        if(peer.tree.longest != NULL)
-            chainL = std::max(chainL, peer.tree.longest -> chainLength);
-   }
+    file << "Peer ID,<ComutePower>,<peer's blocks>,<in longest chain>,<% in longest chain>,<orphans received>\n";
 
-    for(auto peer : peers){
-        file << peer.ID << ": " << peer.tree.blksByMe << " " << peer.tree.blksByMe * 100.0 / chainL << "\n";
+    Ticks total_power = 0;
+    for(auto &p : meanTk) total_power += 1/p;
+
+    for (int i = 0; i < num_peers; ++i)
+    {
+        auto &peer = peers[i];
+        file << peer.ID 
+            << "," << 100.0 / (total_power * meanTk[i])
+            << "," << peer.tree.blksByMe 
+            << "," << peer.tree.blocksInChainById(peer.ID)
+            << "," << peer.tree.blocksInChainById(peer.ID) * 100.0 / peer.tree.longest -> chainLength 
+            << "," << peer.tree.orphansRcvd
+            << "\n";
         tot += peer.tree.blksByMe;
     }
 
-    file << "\nTotal Blocks: " << tot;
+    // file << "\nTotal Blocks in Trees: " << tot << std::endl;
+    // file << "\nTotal Blocks Generated: " << tot;
 
     return 0;
-
 }
 
-void Simulator::chooseSlowNodes(){
+void Simulator::chooseSlowNodes()
+{
     int num_slow_nodes = std::ceil(z * num_peers / 100);
-    if(num_slow_nodes == 0) return;
+    if (num_slow_nodes == 0)
+        return;
     int m = num_peers / num_slow_nodes;
 
     std::mt19937 rng((std::random_device())());
     std::uniform_int_distribution<unsigned int> select(0, num_peers - 1);
 
     std::set<int> st;
-    while(st.size() < num_slow_nodes){
+    while (st.size() < num_slow_nodes)
+    {
         int k = select(rng);
         st.insert(k);
     }
 
-    for(int k : st)
+    for (int k : st)
         peers[k].slow = true;
 
     // for(int i = 0; i < num_peers; ++i){
@@ -174,29 +183,35 @@ void Simulator::chooseSlowNodes(){
     return;
 }
 
-void Simulator::ConnectGraphByBarbasiAlbert(ID_t n, ID_t m){
-    if(num_peers < 2 || m < 2) return;
+void Simulator::ConnectGraphByBarbasiAlbert(ID_t n, ID_t m)
+{
+    if (num_peers < 2 || m < 2)
+        return;
 
     ConnectGraphByRandomWalk(m);
 
     std::vector<ID_t> deg(n);
 
-    for(int i=0; i<m; ++i){ // Initialize a connected network with m nodes
+    for (int i = 0; i < m; ++i)
+    { // Initialize a connected network with m nodes
         deg[i] = peers[i].links.size();
     }
 
     std::mt19937 rng((std::random_device())());
 
-    for(int i=m; i < n; ++i){
+    for (int i = m; i < n; ++i)
+    {
         std::discrete_distribution<ID_t> select(deg.begin(), deg.begin() + i);
 
-        for(int j = 0; j < m; ++j){ // Connect this one to m nodes
+        for (int j = 0; j < m; ++j)
+        { // Connect this one to m nodes
             int k = select(rng);
             peers[i].links[&peers[k]] = Link(&peers[i], &peers[k]);
             peers[k].links[&peers[i]] = Link(&peers[k], &peers[i]);
         }
 
-        for(int j = 0; j < i+1; ++j){
+        for (int j = 0; j < i + 1; ++j)
+        {
             deg[j] = peers[j].links.size();
         }
     }
