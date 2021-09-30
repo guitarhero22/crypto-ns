@@ -33,6 +33,8 @@ The executable takes in the path to a config file which contains the simulation 
 * ***T_k*** is the mean of interarrival of blocks for the k-th node
 * ***m*** initial set size for Barabase-Albert Algorithm 
 
+The time variables are in milliseconds.
+
 ## Logs and Graphs
 
 For getting the logs and graphs, please make `dumps` and `dots` directorys in your working directory. 

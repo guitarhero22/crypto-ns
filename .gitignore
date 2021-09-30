@@ -1,6 +1,9 @@
 #VSCODE files
 test
+*.pdf
+*.png
 .vscode/*
+dots/
 
 #build dir
 build/*
