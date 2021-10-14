@@ -25,8 +25,10 @@
 class Simulator
 {
 public:
-    /**
-     * Constructor for Simulator.
+  Simulator(){};
+
+  /**
+     * Setup the Simulator.
      * 
      * Initializes some important structures and builds set up for the Simulation
      * 
@@ -38,9 +40,25 @@ public:
      * 
      * @returns Instance of the Simulator Class
      */
-    Simulator(ID_t n, float z, Ticks Tx, std::vector<Ticks> &_meanTk, ID_t m);
+  void setup(ID_t n, float z, Ticks Tx, std::vector<Ticks> &meanTk, ID_t m);
 
-    /**
+  /**
+     * Setup the Simulator.
+     * 
+     * Initializes some important structures and builds set up for the Simulation
+     * 
+     * @param n Number of peers to simulate
+     * @param z % of nodes slow
+     * @param Tx mean interarrival time of TxnscA
+     * @param meanTk mean of interarrival of blocks in the network
+     * @param computePower compute power for each node
+     * @param m for Barabasi-Albert Algorithm
+     * 
+     * @returns Instance of the Simulator Class
+     */
+  void setupSelfishMining(ID_t n, Ticks Tx, Ticks meanTk, std::vector<Ticks> &ComputePower, ID_t m);
+
+  /**
      * Start the Simulation
      * 
      * This function continuously picks element from the Event Queue, and calls the `callback` method in the Event.
@@ -51,71 +69,69 @@ public:
      * @param endTime When to end the simulation
      * @return Nothing
      */
-    void start(Ticks endTime); // Start Simulation
+  void start(Ticks endTime); // Start Simulation
 
-   /**
+  /**
      * To Sample a Scale Free Newtork
      * 
      * @param Number of peers to consider
      * @param m initial set size
      */
-    void ConnectGraphByBarbasiAlbert(ID_t n, ID_t m = 2);
+  void ConnectGraphByBarbasiAlbert(ID_t n, ID_t m = 2);
 
-    /**
+  /**
      * To build the Netwoek Topology 
      * 
      * @param Number of peers to consider
      */
-    void ConnectGraphByRandomWalk(ID_t);
+  void ConnectGraphByRandomWalk(ID_t);
 
-    /**
+  /**
      * Choose Slow Nodes
      */
-    void chooseSlowNodes();
+  void chooseSlowNodes();
 
-    /**
+  /**
      * Print the p2p Network to a dot file
      * 
      * @param file output file stream
      * @returns status
      */
-    int P2P2dot(std::ofstream &file);
+  int P2P2dot(std::ofstream &file);
 
-    /**
+  /**
      * Print all the trees to a dot file
      * 
      * @param basename basename for output
      * @returns status
      */
-    int trees2dot(std::string basename);
+  int trees2dot(std::string basename);
 
-    /**
+  /**
      * Print all the trees to a dump file
      * 
      * @param basename basename for output
      * @returns status
      */
-    int peerDump(std::string basename);
+  int peerDump(std::string basename);
 
-    /**
+  /**
      * Prints other results
      */
-    int resultDump(std::string basename);
+  int resultDump(std::string basename);
 
-    /**
-     * Vectore holding the peers
-     */
-    std::vector<Peer> peers;
-
-    /**
+  /**
      * Event Queue.
      * 
      * A heap data structure, so that the event at the top always has the smallest timestamp
      */
-    std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
-    BID_t num_peers = 0; // Number of peer
-    std::vector<Ticks> meanTk;
-    float z = 0;
+  std::priority_queue<Event *, std::vector<Event *>, compare_event> eventQ;
+
+  BID_t num_peers = 0;     // Number of peer
+  std::vector<Peer> peers; // Vector Holding the peers
+  std::vector<Ticks> meanTk;
+  Ticks Tx = 0;
+  float z = 0;
 };
 
 #endif

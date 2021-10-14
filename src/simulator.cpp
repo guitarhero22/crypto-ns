@@ -6,11 +6,54 @@
 
 // extern int NUM_PEERS;
 
-Simulator::Simulator(ID_t n, float _z, Ticks Tx, std::vector<Ticks> &_meanTk, ID_t m) : num_peers(n), z(_z), meanTk(_meanTk)
+void Simulator::setup(ID_t n, float _z, Ticks _Tx, std::vector<Ticks> &_meanTk, ID_t m)
 {
     NUM_PEERS = n;
+    num_peers = n;
+    z = _z;
+    Tx = _Tx;
+    meanTk = _meanTk;
     peers = std::vector<Peer>(n);
 
+    for (int i = 0; i < n; ++i)
+        peers[i] = Peer(i, Tx, meanTk[i], false);
+
+    log("\nChoosing slow nodes...");
+    chooseSlowNodes();
+
+    log("\nBuilding Network...");
+    ConnectGraphByBarbasiAlbert(num_peers, m);
+
+    log("\nSeeding Initial Events...");
+    auto peerInitEvents = Peer::INIT(peers);
+    for (auto &e : peerInitEvents)
+    {
+        if (e == NULL)
+            continue;
+        eventQ.push(e);
+    }
+}
+
+void Simulator::setupSelfishMining(ID_t n, Ticks _Tx, Ticks _meanTk, std::vector<Ticks> &computePower, ID_t m)
+{
+    NUM_PEERS = n;
+    num_peers = n;
+    z = 50;
+
+    //Sanity check
+    if(n != computePower.size()){
+        logerr("Simulator::setupSelfishMining conflict sizes of computePower and num_peers");
+    }
+
+    Ticks total_compute_power = std::accumulate(computePower.begin(), computePower.end(), 0, [](const Ticks &t1, const Ticks &t2)
+                                                { return t1 + t2; });
+    // Calculate Mean Tk for each peer 
+    for(int i = 0; i < n; ++i){
+        meanTk.push_back(_meanTk * computePower[i] / total_compute_power);
+    }
+
+    //Initialize peers
+    peers = std::vector<Peer>(n); 
     for (int i = 0; i < n; ++i)
         peers[i] = Peer(i, Tx, meanTk[i], false);
 
@@ -43,7 +86,7 @@ void Simulator::start(Ticks end_time)
     log("\nStarting Simulation...\n");
     while (!eventQ.empty())
     {
-        auto nexus = eventQ.top();
+        auto nexus = eventQ.top(); //event on top of heap
         eventQ.pop();
 
         if (nexus->timestamp <= end_time)
@@ -61,99 +104,6 @@ void Simulator::start(Ticks end_time)
         };
     }
     log("\n\nSimulation Complete...\n");
-}
-
-int Simulator::P2P2dot(std::ofstream &file)
-{
-
-    if (!file.is_open())
-        return -1;
-
-    file << "graph {\nlayout=\"twopi\"\n";
-
-    std::vector<bool> vis(num_peers, false);
-
-    for (Peer p : peers)
-    {
-        std::string color = p.slow ? "red" : "blue";
-        file << p.ID << " [color=" + color + "]\n";
-    }
-
-    std::stack<int> Q;
-    if (peers.size() > 0)
-        Q.push(0), vis[0] = true;
-
-    while (!Q.empty())
-    {
-        int p = Q.top();
-        Q.pop();
-
-        for (auto n : peers[p].links)
-        {
-            if (vis[n.first->ID])
-                continue;
-            file << p << " -- " << n.first->ID << "\n";
-            vis[n.first->ID] = true;
-            Q.push(n.first->ID);
-        }
-    }
-
-    file << "}";
-
-    return 0;
-}
-
-int Simulator::trees2dot(std::string basename)
-{
-    for (auto p : peers)
-    {
-        std::ofstream file(basename + std::to_string(p.ID) + ".dot");
-        p.tree._2dot(file, p.ID);
-    }
-
-    return 0;
-}
-
-int Simulator::peerDump(std::string basename)
-{
-    for (auto p : peers)
-    {
-        std::ofstream file(basename + std::to_string(p.ID) + ".dump");
-        p.tree._2dump(file, p.ID);
-    }
-
-    return 0;
-}
-
-int Simulator::resultDump(std::string basename)
-{
-    std::ofstream file(basename + "results.dump");
-
-    // file << "\nResults:\n";
-    BID_t tot = 0;
-
-    file << "Peer ID,<ComutePower>,<peer's blocks>,<in longest chain>,<% in longest chain>,<orphans received>\n";
-
-    Ticks total_power = 0;
-    for(auto &p : meanTk) total_power += 1/p;
-
-    for (int i = 0; i < num_peers; ++i)
-    {
-        auto &peer = peers[i];
-        file << peer.ID 
-            << "," << 100.0 / (total_power * meanTk[i])
-            << "," << peer.tree.blksByMe 
-            << "," << peer.tree.blocksInChainById(peer.ID)
-            << "," << peer.tree.blocksInChainById(peer.ID) * 100.0 / peer.tree.longest -> chainLength 
-            << "," << peer.tree.orphansRcvd
-            << "\n";
-        tot += peer.tree.blksByMe;
-    }
-
-    // file << "\nTotal Blocks in Trees: " << tot << std::endl;
-    // file << "\nTotal Blocks Generated: " << tot;
-
-    return 0;
 }
 
 void Simulator::chooseSlowNodes()
@@ -254,4 +204,98 @@ void Simulator::ConnectGraphByRandomWalk(ID_t n)
     }
 
     return;
+}
+
+int Simulator::P2P2dot(std::ofstream &file)
+{
+
+    if (!file.is_open())
+        return -1;
+
+    file << "graph {\nlayout=\"twopi\"\n";
+
+    std::vector<bool> vis(num_peers, false);
+
+    for (Peer p : peers)
+    {
+        std::string color = p.slow ? "red" : "blue";
+        file << p.ID << " [color=" + color + "]\n";
+    }
+
+    std::stack<int> Q;
+    if (peers.size() > 0)
+        Q.push(0), vis[0] = true;
+
+    while (!Q.empty())
+    {
+        int p = Q.top();
+        Q.pop();
+
+        for (auto n : peers[p].links)
+        {
+            if (vis[n.first->ID])
+                continue;
+            file << p << " -- " << n.first->ID << "\n";
+            vis[n.first->ID] = true;
+            Q.push(n.first->ID);
+        }
+    }
+
+    file << "}";
+
+    return 0;
+}
+
+int Simulator::trees2dot(std::string basename)
+{
+    for (auto p : peers)
+    {
+        std::ofstream file(basename + std::to_string(p.ID) + ".dot");
+        p.tree._2dot(file, p.ID);
+    }
+
+    return 0;
+}
+
+int Simulator::peerDump(std::string basename)
+{
+    for (auto p : peers)
+    {
+        std::ofstream file(basename + std::to_string(p.ID) + ".dump");
+        p.tree._2dump(file, p.ID);
+    }
+
+    return 0;
+}
+
+int Simulator::resultDump(std::string basename)
+{
+    std::ofstream file(basename + "results.dump");
+
+    // file << "\nResults:\n";
+    BID_t tot = 0;
+
+    file << "Peer ID,<ComutePower>,<peer's blocks>,<in longest chain>,<% in longest chain>,<orphans received>\n";
+
+    Ticks total_power = 0;
+    for (auto &p : meanTk)
+        total_power += 1 / p;
+
+    for (int i = 0; i < num_peers; ++i)
+    {
+        auto &peer = peers[i];
+        file << peer.ID
+             << "," << 100.0 / (total_power * meanTk[i])
+             << "," << peer.tree.blksByMe
+             << "," << peer.tree.blocksInChainById(peer.ID)
+             << "," << peer.tree.blocksInChainById(peer.ID) * 100.0 / peer.tree.longest->chainLength
+             << "," << peer.tree.orphansRcvd
+             << "\n";
+        tot += peer.tree.blksByMe;
+    }
+
+    // file << "\nTotal Blocks in Trees: " << tot << std::endl;
+    // file << "\nTotal Blocks Generated: " << tot;
+
+    return 0;
 }

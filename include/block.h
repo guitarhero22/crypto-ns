@@ -1,3 +1,9 @@
+/**
+ * @file block.h
+ * 
+ * Contains code for managing transactions, blocks and trees
+ */
+
 #ifndef __BLOCK_H__
 #define __BLOCK_H__
 
@@ -144,16 +150,16 @@ public:
      * so that everyone can use the pointer to refer to the block to save
      * space during simulation
      * 
-     * @param c creator of block
+     * @param miner creator of block
      * @param txns transactions in the block
      * @param parent parent block
      * @param creationTime self explanatory
      * 
      * @returns pointer to a newly created block
      */
-    static Blk *new_blk(ID_t c, std::map<TID_t, Txn *> &txns, BID_t parent, Ticks creationTime)
+    static Blk *new_blk(ID_t miner, std::map<TID_t, Txn *> &txns, BID_t parent, Ticks creationTime)
     {
-        return new Blk(c, txns, parent, creationTime);
+        return new Blk(miner, parent, creationTime, txns);
     };
 
     /**
@@ -171,22 +177,7 @@ public:
      * 
      * @returns instance of Blk Class
      */
-    Blk(ID_t c, std::map<TID_t, Txn *> &_txns, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(getNxtBlk()), timestamp(creationTime), txns(_txns), parent(_parent), creator(c)
-    {
-        // size of self and parent ID and timestamp and the size of all transactions
-        size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000.0;
-        size += Txn::DEFAULT_SIZE * txns.size();
-    };
-
-    /** Constructor
-     * 
-     * @param c creator of block
-     * @param parent parent block
-     * @param creationTime self explanatory
-     * 
-     * @returns instance of Blk Class
-     */
-    Blk(ID_t c, BID_t _parent, Ticks creationTime) : Msg(0, BLOCK), ID(getNxtBlk()), timestamp(creationTime), parent(_parent), creator(c)
+    Blk(ID_t miner, BID_t _parent, Ticks creationTime, const std::map<TID_t, Txn *> &_txns = std::map<TID_t, Txn*> ()) : Msg(0, BLOCK), ID(getNxtBlk()), timestamp(creationTime), txns(_txns), parent(_parent), creator(miner)
     {
         // size of self and parent ID and timestamp and the size of all transactions
         size += (16 * sizeof(ID) + 8 * sizeof(timestamp)) / 1000.0;
@@ -392,10 +383,12 @@ public:
     std::unordered_map<BID_t, std::unordered_map<BID_t, Node *>> orphans; ///< To keep track of orphaned blocks
 };
 
-class compare_node_by_arrival{
-    public:
-    bool operator() (Node * a, Node * b){
-        return a -> arrival < b -> arrival;
+class compare_node_by_arrival
+{
+public:
+    bool operator()(Node *a, Node *b)
+    {
+        return a->arrival < b->arrival;
     }
 };
 

@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * 
+ * Main Method
+ */
+
 #include <fstream>
 #include<iostream>
 #include<string>
@@ -5,29 +11,9 @@
 #include "utils.h"
 
 /**
- * **Inputs**: 
- *  N: Number of Nodes
- *  Z: % of nodes slow 
- *  Tx: Mean inter arrival time of transactions
- * 
+ * For running Assignment 1
  */
-int main(int argc, char* argv[]){
-
-    if(argc < 2){
-        std::cout << "Usage:\n$ ./crypto-ns <config_file_path>\n";
-        return 0;
-    }
-
-    log("Configuration will be taken from file " + std::string(argv[1]));
-
-    std::ifstream config;
-    config.open(std::string(argv[1]));
-
-    if(config.is_open()) 
-        log("Configuring...");
-    else
-        logerr("Could Not Open Configuration File");
-
+void p1(std::ifstream &config){
     ID_t numPeers, m;
     double z;
     Ticks Tx, endTime;
@@ -52,7 +38,8 @@ int main(int argc, char* argv[]){
 
     log("*************************\n");
 
-    Simulator s(numPeers, z, Tx, meanTk, m);
+    Simulator s;
+    // s.setup(numPeers, z, Tx, meanTk, m);
 
     std::ofstream P2PDot("dots/P2P.dot");
     s.P2P2dot(P2PDot);
@@ -63,6 +50,37 @@ int main(int argc, char* argv[]){
     s.trees2dot("dots/");
     s.peerDump("dumps/");
     s.resultDump("dumps/");
+}
+
+
+/**
+ * For running Assignment 2
+ */
+void p2(std::ifstream &config){
+
+}
+
+/**
+ * Main method
+ */
+int main(int argc, char* argv[]){
+
+    if(argc < 2){
+        std::cout << "Usage:\n$ ./crypto-ns <config_file_path>\n";
+        return 0;
+    }
+
+    log("Configuration will be taken from file " + std::string(argv[1]));
+
+    std::ifstream config;
+    config.open(std::string(argv[1]));
+
+    if(config.is_open()) 
+        log("Configuring...");
+    else
+        logerr("Could Not Open Configuration File");
+
+    p1(config);
 
     return 0;
 }

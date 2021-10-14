@@ -198,4 +198,8 @@ public:
     EID_t mining_event = 0; ///< The event ID which will invoke this peer for mining the next block
 };
 
+class SelfishPeer: public Peer{
+    public:
+};
+
 #endif

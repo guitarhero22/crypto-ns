@@ -3,10 +3,10 @@ test
 *.pdf
 *.png
 .vscode/*
-dots/
 
 #build dir
 build/*
+docs/*
 
 # Prerequisites
 *.d

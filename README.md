@@ -14,6 +14,14 @@ $ cmake .. && cmake --build .
 $ ./crytpo-ns <config-file>
 ```
 
+## RUN
+
+### ASSIGNMENT 2
+
+The executable takes in the path to a config file which contains the simulation parameters in the following format.
+
+### ASSIGNMENT 1
+
 The executable takes in the path to a config file which contains the simulation parameters in the following format.
 
 ```

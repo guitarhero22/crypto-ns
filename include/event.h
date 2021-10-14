@@ -45,9 +45,6 @@ public:
      * @returns 
      */
     Event(Ticks ts, EventGenerator *cxt, callback_t cb) : timestamp(ts), context(cxt), callback(cb), ID(getNxtEvent()){};
-    EID_t ID;
-    EventGenerator *context = NULL; ///< Context for the Callback
-    callback_t callback;            ///<
 
     /**
      * Execute Event
@@ -61,7 +58,10 @@ public:
         context = NULL;
     };
 
-    Ticks timestamp; ///< time when event needs to be executed
+    EID_t ID;
+    EventGenerator *context = NULL; ///< Context for the Callback
+    callback_t callback;            ///<
+    Ticks timestamp;                ///< time when event needs to be executed
 };
 
 /**
