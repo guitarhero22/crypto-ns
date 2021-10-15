@@ -272,7 +272,7 @@ public:
      * 
      * @return INT used to find out whether to send it to peers or start mining, etc.
      */
-    int addBlk(Blk *blk, Ticks arrival);
+    virtual std::pair<int,std::vector<Blk*> > addBlk(Blk *blk, Ticks arrival);
 
     /**
      * validates a Block
@@ -341,7 +341,7 @@ public:
      * @param startTime time when the mining starts
      * @returns Block ID of the last block in the longest chain
      */
-    BID_t startMining(ID_t id, Ticks timestamp);
+    virtual BID_t startMining(ID_t id, Ticks timestamp);
 
     /**
      * Prints the tree to a dot file
@@ -390,6 +390,33 @@ public:
     {
         return a->arrival < b->arrival;
     }
+};
+
+
+class SelfishTree: public Tree
+{
+public:
+    SelfishTree(ID_t id): Tree(id), state(0){
+        secret = genesis;
+        honest = genesis;
+        last_sent.insert(genesis);
+    }
+    BID_t last_state = 0, state = 0;
+    std::set<Node*> last_sent;
+    Node* secret;
+    Node* honest;
+
+    /**
+     * - addBlk
+     * - startMining
+     * - findBlk
+     * 
+        0, 0' denoted by -1,
+        1, 2, etc. as defined in class
+    **/
+
+    BID_t startMining(ID_t id, Ticks timestamp);
+    std::pair<int, std::vector<Blk*> > addBlk(Blk *blk, Ticks arrival);
 };
 
 #endif

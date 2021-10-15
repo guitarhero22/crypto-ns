@@ -109,6 +109,7 @@ public:
      * @returns instance of the Peer Class
      */
     Peer(ID_t id, Ticks meanTxn, Ticks meanMine, bool slow);
+    Peer(ID_t id, Ticks meanTxn, Ticks meanMine, bool slow, bool selfish);
 
     /**
      * Simple Getter
@@ -126,7 +127,7 @@ public:
      * 
      * @returns the new events generated
      */
-    std::vector<Event *> rcvMsg(Peer *sender, Msg *msg, Ticks rcvTime);
+    virtual std::vector<Event *> rcvMsg(Peer *sender, Msg *msg, Ticks rcvTime);
 
     /**
      * receive Transaction callback
@@ -139,7 +140,7 @@ public:
      * 
      * @returns the new events generated
      */
-    std::vector<Event *> rcvTxn(Peer *sender, Txn *txn, Ticks rcvTime);
+    virtual std::vector<Event *> rcvTxn(Peer *sender, Txn *txn, Ticks rcvTime);
 
     /**
      * callback for when its time to generate the next transaction
@@ -149,7 +150,7 @@ public:
      * 
      * @returns the new events generated
      */
-    std::vector<Event *> genTxn(Ticks genTime, EID_t eid);
+    virtual std::vector<Event *> genTxn(Ticks genTime, EID_t eid);
 
     /**
      * receive Block callback
@@ -162,7 +163,7 @@ public:
      * 
      * @returns the new events generated
      */
-    std::vector<Event *> rcvBlk(Peer *sender, Blk *, Ticks);
+    virtual std::vector<Event *> rcvBlk(Peer *sender, Blk *, Ticks);
 
     /**
      * callback for when its time to generate the next block
@@ -172,14 +173,14 @@ public:
      * 
      * @returns the new events generated
      */
-    std::vector<Event *> genBlk(Ticks genTime, EID_t eid);
+    virtual std::vector<Event *> genBlk(Ticks genTime, EID_t eid);
 
     /**
      * To Initialize some stuff for starting a new mining session
      * 
      * @returns a Event with the genBlk callback
      */
-    Event *start_mining_session(Ticks startTime);
+    virtual Event *start_mining_session(Ticks startTime);
 
     //for randomness
     ID_t ID;                                          ///< ID
@@ -187,11 +188,12 @@ public:
     std::exponential_distribution<Ticks> nextTxnTime; ///< For sampling time intervals between Transactions
     std::exponential_distribution<Ticks> nextBlkTime; ///< For sampling time intervals between Blocks
 
-    bool slow;          ///< Whether this peer has slow connetion
+    bool slow = false;          ///< Whether this peer has slow connetion
+    bool selfish = false;       ///< Whether this peer is selfish
     Ticks computePower; ///< Compute Power, for deciding when a block will be mined
     Ticks txnGenFreq;   ///< Transaction Generation Frequency
 
-    Tree tree;                              ///< The tree
+    Tree* tree;                              ///< The tree
     std::unordered_map<Peer *, Link> links; ///< Neighbourhood information
 
     BID_t mining_on = 0;    ///< The last Block on which mining is in process

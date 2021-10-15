@@ -7,6 +7,7 @@
 #include <random>
 #include <chrono>
 #include <iostream>
+#include <cassert>
 
 typedef long ID_t;           ///< ID for peers
 typedef long BID_t; ///< ID for Blocks

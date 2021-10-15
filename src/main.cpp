@@ -116,7 +116,7 @@ int main(int argc, char* argv[]){
     else
         logerr("Could Not Open Configuration File");
 
-    p1(config);
+    p2(config);
 
     return 0;
 }

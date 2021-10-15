@@ -50,19 +50,41 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
     for (int i = 0; i < sz; ++i)
     {
         //seed event for transactions
+        log(tos(i) + " being seeded");
         initEvents[i] = new Event(peers[i].nextTxnTime(rng), &peers[i], reinterpret_cast<callback_t>(&Peer::genTxn));
 
         //seed events for mining
+        log(tos(i) + " mining being seeded");
+
         initEvents[i + sz] = peers[i].start_mining_session(0);
     }
 
+    log("all seeded, tree being initialized");
+
     Tree::INIT();
-    return initEvents;
     log("Peers Initialized");
+
+    return initEvents;
 };
 
-Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id), tree(Tree(id))
+Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id)
+{   
+    if(selfish){
+        tree = new SelfishTree(id);
+    }else{
+        tree = new Tree(id);
+    }
+    // rng = std::mt19937((std::random_device())());
+    nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);
+    nextBlkTime = std::exponential_distribution<Ticks>(1 / computePower);
+}
+Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow, bool _selfish) : slow(_slow), ID(id), selfish(_selfish)
 {
+    if(selfish){
+        tree = new SelfishTree(id);
+    }else{
+        tree = new Tree(id);
+    }
     // rng = std::mt19937((std::random_device())());
     nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);
     nextBlkTime = std::exponential_distribution<Ticks>(1 / computePower);
@@ -98,7 +120,7 @@ std::vector<Event *> Peer::rcvTxn(Peer *src, Txn *txn, Ticks rcvTime)
     std::vector<Event *> ret;
 
     //check if transaction is already present
-    if (!tree.addTxn(txn))
+    if (!tree -> addTxn(txn))
         // no need to send to peers, so return
         return ret;
 
@@ -139,7 +161,7 @@ std::vector<Event *> Peer::genTxn(Ticks genTime, EID_t eid)
 Event *Peer::start_mining_session(Ticks startTime)
 {
     //Select the block to mine on
-    mining_on = tree.startMining(ID, startTime);
+    mining_on = tree -> startMining(ID, startTime);
 
     //sample the time this block takes to mine
     Ticks genTime = startTime + nextBlkTime(rng);
@@ -155,7 +177,6 @@ Event *Peer::start_mining_session(Ticks startTime)
 
 std::vector<Event *> Peer::rcvBlk(Peer *src, Blk *blk, Ticks rcvTime)
 {
-
     /**
      * src: the peer who sent this block to us
      */
@@ -164,27 +185,35 @@ std::vector<Event *> Peer::rcvBlk(Peer *src, Blk *blk, Ticks rcvTime)
     std::vector<Event *> ret;
 
     //see if the block is already present in the tree
-    int what_should_I_do_with_it_LOL = tree.addBlk(blk, rcvTime);
+    auto blk_list = tree -> addBlk(blk, rcvTime); //blk_list is a pair of type (int, vector<blk*>)
 
-    if (what_should_I_do_with_it_LOL == DONT_SEND || what_should_I_do_with_it_LOL == DONT_KNOW)
+    if (blk_list.first == DONT_SEND || blk_list.first == DONT_KNOW)
     {
         //if already present, no need to send to neighbours
         return ret;
     }
 
     //if new longest chain is discovered start a new mining session
-    if (what_should_I_do_with_it_LOL == NEW_LONGEST_CHAIN)
+    if (blk_list.first == NEW_LONGEST_CHAIN)
     {
         ret.push_back(start_mining_session(rcvTime)); //start new mining session
     }
 
     //send the block to all neighbours other than the sender to avoid loops
-    for (auto &l : links)
-    {
-        if (src != NULL && l.first->ID == src->ID)
-            continue;
-        ret.push_back(l.second.send(blk, rcvTime));
+    for (auto &_blk : blk_list.second){
+        for (auto &l : links)
+        {
+            if (src != NULL && l.first->ID == src->ID)
+                continue;
+            ret.push_back(l.second.send(_blk, rcvTime));
+        }
     }
+    // for (auto &l : links)
+    // {
+    //     if (src != NULL && l.first->ID == src->ID)
+    //         continue;
+    //     ret.push_back(l.second.send(blk, rcvTime));
+    // }
 
     //return new events generated
     return ret;
@@ -204,7 +233,7 @@ std::vector<Event *> Peer::genBlk(Ticks genTime, EID_t eid)
     }
 
     //Create New Block
-    Blk *blk = tree.mineBlk(ID, mining_on, genTime);
+    Blk *blk = tree -> mineBlk(ID, mining_on, genTime);
 
     //BroadCast new Block, rcvBlk will also create a new mining session
     ret = rcvBlk(this, blk, genTime);

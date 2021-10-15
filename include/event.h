@@ -78,7 +78,7 @@ public:
      */
     std::vector<Event *> plant(Ticks _time, EID_t eid)
     {
-        std::cout << "." << std::flush;
+        // std::cout << "." << std::flush;
         return std::vector<Event *>();
     };
 };
