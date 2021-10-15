@@ -50,12 +50,9 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
     for (int i = 0; i < sz; ++i)
     {
         //seed event for transactions
-        log(tos(i) + " being seeded");
         initEvents[i] = new Event(peers[i].nextTxnTime(rng), &peers[i], reinterpret_cast<callback_t>(&Peer::genTxn));
 
         //seed events for mining
-        log(tos(i) + " mining being seeded");
-
         initEvents[i + sz] = peers[i].start_mining_session(0);
     }
 

@@ -54,6 +54,7 @@ void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, 
     for(int i = 0; i < n; ++i){
         if(computePower[i] <= 0) logerr("setupSelfishMining:: computePower cannot be zero");
         meanTk.push_back(_meanTk * total_compute_power / computePower[i]);
+        log(tos(meanTk[i]));
     }
 
     //Initialize peers
@@ -67,8 +68,7 @@ void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, 
     ConnectGraphByBarbasiAlbert(num_peers - 1, m);
 
     peers[n-1] = Peer(n-1, Tx, meanTk[n-1], false, true);
-    for(int i = 0; i < n / 2; ++i){
-        log("joining with" + tos(i));
+    for(int i = 0; i < n-1; ++i){
         peers[n-1].links[&peers[i]] = Link(&peers[n-1], &peers[i]);
         peers[i].links[&peers[n-1]] = Link(&peers[i], &peers[n-1]);
     }

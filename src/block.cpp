@@ -517,7 +517,7 @@ BID_t SelfishTree::startMining(ID_t id, Ticks startTime)
     TxnForNxtBlk.clear();
 
     //Collect Valid Transactions from Transaction Pool
-    collectValidTxns(txnPool, secret, TxnForNxtBlk);
+    collectValidTxns(txnPool, longest, TxnForNxtBlk);
 
     //Create a coinbase Transaction
     Txn *coinbase = Txn::new_txn(creator, creator, COINBASE, startTime, true);
@@ -535,9 +535,6 @@ BID_t SelfishTree::startMining(ID_t id, Ticks startTime)
 
 std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
 {
-    
-    
-    
     
     auto dont_send = std::make_pair(DONT_SEND, std::vector<Blk*>());
     auto send = std::make_pair(SEND, std::vector<Blk*>({blk}));
@@ -582,20 +579,18 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
         return dont_send;
 
     std::pair<int, std::vector<Blk*> > ret({DONT_SEND, std::vector<Blk*>()});
-    bool panic = false;
+    int panic = -1;
 
-    log("Logging a valid block");
-
-    log("ID:" + tos(blk -> ID));
-    log("Parent:" + tos(blk -> parent));
-    log("timestamp:" + tos(blk -> timestamp));
-    log("ID_t:" + tos(blk ->creator));
+    // log("Logging a valid block");
+    // log("ID:" + tos(blk -> ID));
+    // log("Parent:" + tos(blk -> parent));
+    // log("timestamp:" + tos(blk -> timestamp));
+    // log("ID_t:" + tos(blk ->creator));
 
     if (validity == VALID && blk -> creator != creator)
     {
         // find parent block
         Node *p = blks[blk->parent];
-
 
         // sanity check
         if (p == NULL)
@@ -687,35 +682,44 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
                 txnPool.erase(tid);
             }
 
-
-            if(honest -> chainLength == secret -> chainLength){
-                panic = true;
-                state = -1;
-                log("state updated to -1");
-            }
-            if(honest -> chainLength > secret -> chainLength) {
-                secret = honest; 
+            //Update State
+            if(honest -> chainLength > secret -> chainLength){
                 state = 0;
-                log("state updated to 0");
+                secret = honest;
+
+                panic = 0;
                 ret.first = NEW_LONGEST_CHAIN;
             }
-            if(secret -> chainLength - honest ->chainLength == 1){
-                state = 0;
-                log("State updated to 0");
-                panic = true;
+            else if(honest -> chainLength == secret -> chainLength){
+                state = -1;
+
+                panic = 0;
+                ret.first = SEND;
+            }
+            else if(honest -> chainLength < secret -> chainLength){
+                state = secret -> chainLength - honest -> chainLength;
+
+                panic = state;
+                ret.first = SEND;
             }
         }
 
-        if(panic)
+        if(panic >= 0)
         {   
-            ret.first = SEND;
-            auto node_to_send = secret;
-            while(last_sent.find(node_to_send) == last_sent.end()){
+            if(panic == 1) panic = state = 0; //if honest miners catch up and we have only a lead of 1
+
+            Node* node_to_send = secret;
+
+            while(panic--){
                 assert(node_to_send != NULL);
-                ret.second.push_back(node_to_send -> blk);
                 node_to_send = node_to_send -> parent;
             }
-            last_sent.insert(secret);
+
+            while(last_sent.find(node_to_send) == last_sent.end()){
+                ret.second.push_back(node_to_send -> blk);
+                last_sent.insert(node_to_send);
+                node_to_send = node_to_send -> parent;
+            }
         }
     }
     
@@ -732,33 +736,47 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
         blks[blk->ID] = node;
 
         blksByMe++;
+        if(node -> chainLength <= secret -> chainLength)
+            logerr("Tree::addBlk CL of new secret block is less");
+
         secret = node;
-        // log("secret updated" + tos(secret -> chainLength));
 
         if(state == -1){
-            state = 0;
-            honest = secret;
-            ret.first = SEND;
-            auto node_to_send = secret;
-            assert(secret != NULL);
+            state = 1;
+        }
+        else if(state >= 0){
+            state ++;
+        }
 
-            while(last_sent.find(node_to_send) == last_sent.end()){
+        ret.first = NEW_LONGEST_CHAIN;
+
+        if(panic >= 0)
+        {   
+            if(panic == 1) panic = state = 0; //if honest miners catch up and we have only a lead of 1
+
+            Node* node_to_send = secret;
+
+            while(panic--){
                 assert(node_to_send != NULL);
-                ret.second.push_back(node_to_send -> blk);
                 node_to_send = node_to_send -> parent;
             }
-            last_sent.insert(secret);
-        }
-        else{
-            state++;
-        }
-        log("State:" + tos(state));
 
+            while(last_sent.find(node_to_send) == last_sent.end()){
+                ret.second.push_back(node_to_send -> blk);
+                last_sent.insert(node_to_send);
+                node_to_send = node_to_send -> parent;
+            }
+        }
     }
 
     if(honest -> chainLength > longest -> chainLength) longest = honest;
     if(secret -> chainLength > longest -> chainLength) longest = secret;
-    assert(longest == secret);
+
+    log("State: " + tos(state) + ", " + "Creator: " + tos(blk -> creator) + ", Panic: " + tos(panic));
+    if(longest != secret){
+        log("Creator: " + tos(blk -> creator));
+        logerr(tos(longest -> blk -> creator) + "\n" + tos(secret -> blk -> creator));
+    }
 
     return ret;
 }

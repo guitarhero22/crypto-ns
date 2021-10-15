@@ -401,7 +401,7 @@ public:
         honest = genesis;
         last_sent.insert(genesis);
     }
-    BID_t last_state = 0, state = 0;
+    BID_t state = 0;
     std::set<Node*> last_sent;
     Node* secret;
     Node* honest;
