@@ -772,9 +772,9 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
     if(honest -> chainLength > longest -> chainLength) longest = honest;
     if(secret -> chainLength > longest -> chainLength) longest = secret;
 
-    log("State: " + tos(state) + ", " + "Creator: " + tos(blk -> creator) + ", Panic: " + tos(panic));
+    // log("State: " + tos(state) + ", " + "Creator: " + tos(blk -> creator) + ", Panic: " + tos(panic));
     if(longest != secret){
-        log("Creator: " + tos(blk -> creator));
+        // log("Creator: " + tos(blk -> creator));
         logerr(tos(longest -> blk -> creator) + "\n" + tos(secret -> blk -> creator));
     }
 
