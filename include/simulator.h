@@ -56,7 +56,7 @@ public:
      * 
      * @returns Instance of the Simulator Class
      */
-  void setupSelfishMining(ID_t n, Ticks Tx, Ticks meanTk, std::vector<Ticks> &ComputePower, ID_t m);
+  void setupSelfishMining(ID_t n, double z, Ticks Tx, Ticks meanTk, std::vector<Ticks> &ComputePower, ID_t m);
 
   /**
      * Start the Simulation

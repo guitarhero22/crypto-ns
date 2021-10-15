@@ -34,11 +34,13 @@ void Simulator::setup(ID_t n, float _z, Ticks _Tx, std::vector<Ticks> &_meanTk, 
     }
 }
 
-void Simulator::setupSelfishMining(ID_t n, Ticks _Tx, Ticks _meanTk, std::vector<Ticks> &computePower, ID_t m)
+void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, std::vector<Ticks> &computePower, ID_t m)
 {
     NUM_PEERS = n;
     num_peers = n;
-    z = 50;
+    peers = std::vector<Peer>(n); 
+    z = _z;
+    Tx = _Tx;
 
     //Sanity check
     if(n != computePower.size()){
@@ -47,13 +49,14 @@ void Simulator::setupSelfishMining(ID_t n, Ticks _Tx, Ticks _meanTk, std::vector
 
     Ticks total_compute_power = std::accumulate(computePower.begin(), computePower.end(), 0, [](const Ticks &t1, const Ticks &t2)
                                                 { return t1 + t2; });
+
     // Calculate Mean Tk for each peer 
     for(int i = 0; i < n; ++i){
-        meanTk.push_back(_meanTk * computePower[i] / total_compute_power);
+        if(computePower[i] <= 0) logerr("setupSelfishMining:: computePower cannot be zero");
+        meanTk.push_back(_meanTk * total_compute_power / computePower[i]);
     }
 
     //Initialize peers
-    peers = std::vector<Peer>(n); 
     for (int i = 0; i < n; ++i)
         peers[i] = Peer(i, Tx, meanTk[i], false);
 
