@@ -70,7 +70,7 @@ public:
     Peer *tgt;                              ///< Receiver
     Ticks p;                                ///< the parameter p
     Ticks c;                                ///< c speed of light delay
-    std::mt19937 rng;                       ///< Random number generator
+    // std::mt19937 rng;                       ///< Random number generator
     std::exponential_distribution<Ticks> d; ///< Exponential distribution for queuing delay
 };
 
@@ -183,7 +183,7 @@ public:
 
     //for randomness
     ID_t ID;                                          ///< ID
-    std::mt19937 rng;                                 ///< Random Number Generator
+    // std::mt19937 rng;                                 ///< Random Number Generator
     std::exponential_distribution<Ticks> nextTxnTime; ///< For sampling time intervals between Transactions
     std::exponential_distribution<Ticks> nextBlkTime; ///< For sampling time intervals between Blocks
 

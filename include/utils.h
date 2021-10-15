@@ -18,6 +18,7 @@ typedef double Size;         ///< Size of blks/txns in units of 1 kbits
 
 #ifndef __UTILS_CPP__
 extern ID_t NUM_PEERS; ///< Defined in utils.h, so that everyone has access
+extern std::mt19937 rng;
 #endif
 
 #define tos(a) std::to_string(a)

@@ -6,7 +6,7 @@ Link::Link(Peer *_src, Peer *_tgt) : src(_src), tgt(_tgt)
 {
     p = _unif_real<Ticks>(10, 500); // speed of light delay
     c = (src->is_slow() || tgt->is_slow()) ? 5 : 100; // link speed
-    rng = std::mt19937((std::random_device())());  //random generator object
+    // rng = std::mt19937((std::random_device())());  //random generator object
     d = std::exponential_distribution<Ticks>(c / 96.0); //distribution for queuing delay
 }
 
@@ -50,7 +50,7 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
     for (int i = 0; i < sz; ++i)
     {
         //seed event for transactions
-        initEvents[i] = new Event(peers[i].nextTxnTime(peers[i].rng), &peers[i], reinterpret_cast<callback_t>(&Peer::genTxn));
+        initEvents[i] = new Event(peers[i].nextTxnTime(rng), &peers[i], reinterpret_cast<callback_t>(&Peer::genTxn));
 
         //seed events for mining
         initEvents[i + sz] = peers[i].start_mining_session(0);
@@ -63,7 +63,7 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
 
 Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id), tree(Tree(id))
 {
-    rng = std::mt19937((std::random_device())());
+    // rng = std::mt19937((std::random_device())());
     nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);
     nextBlkTime = std::exponential_distribution<Ticks>(1 / computePower);
 }

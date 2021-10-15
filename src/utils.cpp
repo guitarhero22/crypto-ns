@@ -28,3 +28,6 @@ std::string ticks2str(Ticks time){
     int milisecs = (time  - secs * 1000);
     return tos(min) + ":" + tos(secs) + "." + tos(milisecs);
 }
+
+std::random_device dev;
+std::mt19937 rng(dev());
