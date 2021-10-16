@@ -34,7 +34,7 @@ void Simulator::setup(ID_t n, float _z, Ticks _Tx, std::vector<Ticks> &_meanTk, 
     }
 }
 
-void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, std::vector<Ticks> &computePower, ID_t m)
+void Simulator::setupAdversarialMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, std::vector<Ticks> &computePower, ID_t m, double _num_connections, std::string adversary)
 {
     NUM_PEERS = n;
     num_peers = n;
@@ -52,7 +52,7 @@ void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, 
 
     // Calculate Mean Tk for each peer 
     for(int i = 0; i < n; ++i){
-        if(computePower[i] <= 0) logerr("setupSelfishMining:: computePower cannot be zero");
+        if(computePower[i] <= 0) logerr("setupAdversarialMining:: computePower cannot be zero");
         meanTk.push_back(_meanTk * total_compute_power / computePower[i]);
         log(tos(meanTk[i]));
     }
@@ -67,8 +67,9 @@ void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, 
     log("\nBuilding Network...");
     ConnectGraphByBarbasiAlbert(num_peers - 1, m);
 
-    peers[n-1] = Peer(n-1, Tx, meanTk[n-1], false, true);
-    for(int i = 0; i < n-1; ++i){
+    peers[n-1] = Peer(n-1, Tx, meanTk[n-1], false, adversary);
+    int num_connections = (int)std::floor(n*_num_connections);
+    for(int i = 0; i < num_connections; ++i){
         peers[n-1].links[&peers[i]] = Link(&peers[n-1], &peers[i]);
         peers[i].links[&peers[n-1]] = Link(&peers[i], &peers[n-1]);
     }
@@ -81,7 +82,6 @@ void Simulator::setupSelfishMining(ID_t n, double _z, Ticks _Tx, Ticks _meanTk, 
             continue;
         eventQ.push(e);
     }
-    log("All seeded in sim");
 }
 
 void Simulator::start(Ticks end_time)
@@ -89,7 +89,6 @@ void Simulator::start(Ticks end_time)
     auto milestone = new Milestone();
 
     //Putting Milestones
-    log("YLo!");
     for (int i = 0; i < 10; ++i)
     {
         eventQ.push(new Event((i + 1) * end_time / 10, milestone, reinterpret_cast<callback_t>(&Milestone::plant)));
@@ -171,6 +170,7 @@ void Simulator::ConnectGraphByBarbasiAlbert(ID_t n, ID_t m)
             int k = select(rng);
             peers[i].links[&peers[k]] = Link(&peers[i], &peers[k]);
             peers[k].links[&peers[i]] = Link(&peers[k], &peers[i]);
+            log("i:" + tos(i) + " k: " + tos(k));
         }
 
         for (int j = 0; j < i + 1; ++j)
@@ -243,9 +243,10 @@ int Simulator::P2P2dot(std::ofstream &file)
     {
         int p = Q.top();
         Q.pop();
-
+        log("peer " + tos(p));
         for (auto n : peers[p].links)
         {
+            log("N:" + tos(n.first->ID));
             file << p << " -- " << n.first->ID << "\n";
 
             if (vis[n.first->ID])
@@ -254,6 +255,7 @@ int Simulator::P2P2dot(std::ofstream &file)
             Q.push(n.first->ID);
         }
     }
+    log("Handled queue");
 
     file << "}";
 

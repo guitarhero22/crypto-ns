@@ -66,21 +66,31 @@ std::vector<Event *> Peer::INIT(std::vector<Peer> &peers)
 
 Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow) : slow(_slow), ID(id)
 {   
-    if(selfish){
-        tree = new SelfishTree(id);
-    }else{
-        tree = new Tree(id);
-    }
+    tree = new Tree(id);
+
     // rng = std::mt19937((std::random_device())());
     nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);
     nextBlkTime = std::exponential_distribution<Ticks>(1 / computePower);
 }
-Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow, bool _selfish) : slow(_slow), ID(id), selfish(_selfish)
+Peer::Peer(ID_t id, Ticks txnMean, Ticks computePower, bool _slow, std::string _adversary) : slow(_slow), ID(id), adversary(_adversary)
 {
-    if(selfish){
+    if(adversary == "selfish"){
+        log(tos(id) + " Assigned as selfish");
         tree = new SelfishTree(id);
     }else{
-        tree = new Tree(id);
+        if(adversary == "stubborn"){
+            log(tos(id) + " Assigned as stubborn");
+
+            tree = new StubbornTree(id);
+        }
+        else{
+            if(adversary == "not"){
+                log(tos(id) + " Assigned as normal");
+                tree = new Tree(id);
+            }
+            else
+            throw NotImplementedException(adversary + " has not been implemented");
+        }
     }
     // rng = std::mt19937((std::random_device())());
     nextTxnTime = std::exponential_distribution<Ticks>(1 / txnMean);

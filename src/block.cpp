@@ -742,7 +742,8 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
         secret = node;
 
         if(state == -1){
-            state = 1;
+            state = 0;
+            panic = 0;
         }
         else if(state >= 0){
             state ++;
@@ -754,6 +755,279 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
         {   
             if(panic == 1) panic = state = 0; //if honest miners catch up and we have only a lead of 1
 
+            Node* node_to_send = secret;
+
+            while(panic--){
+                assert(node_to_send != NULL);
+                node_to_send = node_to_send -> parent;
+            }
+
+            while(last_sent.find(node_to_send) == last_sent.end()){
+                ret.second.push_back(node_to_send -> blk);
+                last_sent.insert(node_to_send);
+                node_to_send = node_to_send -> parent;
+            }
+        }
+    }
+
+    if(honest -> chainLength > longest -> chainLength) longest = honest;
+    if(secret -> chainLength > longest -> chainLength) longest = secret;
+
+    // log("State: " + tos(state) + ", " + "Creator: " + tos(blk -> creator) + ", Panic: " + tos(panic));
+    if(longest != secret){
+        // log("Creator: " + tos(blk -> creator));
+        logerr(tos(longest -> blk -> creator) + "\n" + tos(secret -> blk -> creator));
+    }
+
+    return ret;
+}
+
+
+//! Stubborn Tree
+
+BID_t StubbornTree::startMining(ID_t id, Ticks startTime)
+{
+    // std::cerr<< creator << " Have we reached here????\n";
+
+    //init
+    TxnForNxtBlk.clear();
+
+    //Collect Valid Transactions from Transaction Pool
+    collectValidTxns(txnPool, longest, TxnForNxtBlk);
+
+    //Create a coinbase Transaction
+    Txn *coinbase = Txn::new_txn(creator, creator, COINBASE, startTime, true);
+
+    //Add coinbase transaction to Txns for next block
+    TxnForNxtBlk[coinbase->ID] = coinbase;
+
+    //sanity check
+    if (longest == NULL)
+        logerr("Tree:startMining longest is NULL");
+
+    //return the block ID on which to mine
+    return secret->blk->ID;
+}
+
+std::pair<int, std::vector<Blk*> >  StubbornTree::addBlk(Blk *blk, Ticks arrival)
+{
+    
+    auto dont_send = std::make_pair(DONT_SEND, std::vector<Blk*>());
+    auto send = std::make_pair(SEND, std::vector<Blk*>({blk}));
+
+    //sanity check
+    if (blk == NULL)
+        logerr("Tree::addBlk blk is NULL");
+
+    //If block has been previously received, don't send to peers
+    if (findBlk(blk->ID))
+        return dont_send;
+
+    //If the block is present in `orphans` don't send, because it has been seen before
+    if (findBlk(blk->ID, blk->parent))
+        return dont_send;
+
+    //Check validity of the block
+    int validity = validateBlk(blk);
+
+    // If invalid, don't send to peers
+    if (validity == INVALID)
+    {
+        return dont_send;
+    }
+
+    // If Block's parent is not present
+    if (validity == ORPHAN)
+    {
+        // make updates
+        orphansRcvd ++;
+
+        // add to orphans
+        orphans[blk->parent][blk->ID] = new Node(blk, NULL, 0, arrival);
+
+        // SEND to peers
+        return dont_send;
+        // return send;
+    }
+
+    // already present, don't send
+    if (validity == PRESENT)
+        return dont_send;
+
+    std::pair<int, std::vector<Blk*> > ret({DONT_SEND, std::vector<Blk*>()});
+    int panic = -1;
+
+    // log("Logging a valid block");
+    // log("ID:" + tos(blk -> ID));
+    // log("Parent:" + tos(blk -> parent));
+    // log("timestamp:" + tos(blk -> timestamp));
+    // log("ID_t:" + tos(blk ->creator));
+
+    if (validity == VALID && blk -> creator != creator)
+    {
+        // find parent block
+        Node *p = blks[blk->parent];
+
+        // sanity check
+        if (p == NULL)
+            logerr("Tree::addBlk parent is Null after validation");
+
+        // Create new node
+        Node *node = new Node(blk, p, p->chainLength + 1, arrival);
+        blks[blk->ID] = node;
+
+        // sanity check
+        if (honest == NULL)
+            logerr("Tree::addBlk longest should not be NULL");
+
+        //to check if a new longer chain is detected
+        Node *longer = honest;
+        if (node->chainLength > longer->chainLength)
+            longer = node;
+
+        //to add orphaned nodes
+        std::queue<BID_t> Q;
+        Q.push(blk->ID);
+
+        /**
+         * Add orphaned nodes at each iteration if parent is present
+         * Check for orphaned children of these nodes in further iterations
+         * 
+         * Repeat untill no parent left to check for orphaned nodes
+         */
+        while (!Q.empty()) 
+        {
+            BID_t was_lost = Q.front();
+            Q.pop();
+
+            if (orphans.find(was_lost) == orphans.end())
+                //no orphan for this parent
+                continue;
+
+            // if control reaches this point, the parent has orpaned nodes
+            auto parent_node = blks[was_lost];
+
+            //add all orphans of this parent to tree now
+            for (auto &child : orphans[was_lost])
+            {
+
+                //sanity check
+                if (findBlk(child.first) == PRESENT)
+                {
+                    log("Tree::addBlk Something Unusual, orphan already present");
+                    continue;
+                }
+
+                //recursion
+                Q.push(child.first);
+
+                child.second->chainLength = parent_node->chainLength + 1;
+                child.second->parent = parent_node;
+
+                blks[child.first] = child.second;
+
+                //check if a longer chaing is seen
+                if (child.second->chainLength > longer->chainLength)
+                {
+                    longer = child.second;
+                }
+                else if (child.second->chainLength == longer->chainLength)
+                {
+                    //if length is same, check arrival time
+                    if (longer->arrival > child.second->arrival)
+                        longer = child.second;
+                }
+            }
+
+            orphans.erase(was_lost); // erase because, no longer orphan
+        }
+
+        //check if a new longer chaing was seem
+        if (longer != honest)
+        {
+            //update transaction pool 
+            collectTxnInChain(txnPool, honest);
+
+            inBlkChain.clear();
+
+            honest = longer;
+            collectTxnInChain(inBlkChain, honest);
+
+            for (auto &tid : inBlkChain)
+            {
+                txnPool.erase(tid);
+            }
+
+            //Update State
+            if(honest -> chainLength > secret -> chainLength){
+                state = 0;
+                secret = honest;
+
+                panic = 0;
+                ret.first = NEW_LONGEST_CHAIN;
+            }
+            else if(honest -> chainLength == secret -> chainLength){
+                state = -1;
+
+                panic = 0;
+                ret.first = SEND;
+            }
+            else if(honest -> chainLength < secret -> chainLength){
+                state = secret -> chainLength - honest -> chainLength;
+
+                panic = state;
+                ret.first = SEND;
+            }
+        }
+
+        if(panic >= 0)
+        {   
+            if(panic == 1) panic = state = 0; //if honest miners catch up and we have only a lead of 1
+
+            Node* node_to_send = secret;
+
+            while(panic--){
+                assert(node_to_send != NULL);
+                node_to_send = node_to_send -> parent;
+            }
+
+            while(last_sent.find(node_to_send) == last_sent.end()){
+                ret.second.push_back(node_to_send -> blk);
+                last_sent.insert(node_to_send);
+                node_to_send = node_to_send -> parent;
+            }
+        }
+    }
+    
+    if(validity == VALID && blk -> creator == creator){
+
+        Node *p = blks[blk->parent];
+
+        // sanity check
+        if (p == NULL)
+            logerr("Tree::addBlk parent is Null after validation");
+
+        // Create new node
+        Node *node = new Node(blk, p, p->chainLength + 1, arrival);
+        blks[blk->ID] = node;
+
+        blksByMe++;
+        if(node -> chainLength <= secret -> chainLength)
+            logerr("Tree::addBlk CL of new secret block is less");
+
+        secret = node;
+
+        if(state == -1){
+            state = 1;
+        }
+        else if(state >= 0){
+            state ++;
+        }
+
+        ret.first = NEW_LONGEST_CHAIN;
+
+        if(panic >= 0)
+        {   
             Node* node_to_send = secret;
 
             while(panic--){

@@ -60,7 +60,9 @@ void p2(std::ifstream &config){
     ID_t numPeers, m;
     double z;
     Ticks Tx, endTime, meanTk;
-    config >> numPeers >> z >> Tx >> meanTk >> endTime >> m;
+    double num_connections;
+    std::string adversary;
+    config >> numPeers >> z >> Tx >> meanTk >> endTime >> m >> adversary>> num_connections;
 
     std::vector<Ticks> computePower(numPeers);
 
@@ -70,6 +72,8 @@ void p2(std::ifstream &config){
     log("Tx: " + tos(Tx));
     log("endTime: " + tos(endTime));
     log("m: " + tos(m));
+    log("\% Connections for adversary: "+ tos(num_connections));
+    log("Adversary: " + adversary);
     log("");
 
     for(ID_t i = 0; i < numPeers; ++i){
@@ -81,11 +85,12 @@ void p2(std::ifstream &config){
 
     Simulator s;
 
-    s.setupSelfishMining(numPeers, z, Tx, meanTk, computePower, m);
+    s.setupAdversarialMining(numPeers, z, Tx, meanTk, computePower, m, num_connections, adversary);
 
     std::ofstream P2PDot("dots/P2P.dot");
     s.P2P2dot(P2PDot);
     P2PDot.close();
+    log("P2P drawn");
 
     s.start(endTime);
 
