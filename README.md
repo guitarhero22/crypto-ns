@@ -21,7 +21,7 @@ $ ./crytpo-ns <config-file>
 The executable takes in the path to a config file which contains the simulation parameters in the following format.
 
 ```
-<#nodes> <Z> <Tx> <Sim Time> <m> <adversary> <t>
+<#nodes> <Z> <Tx> <Tk> <Sim Time> <m> <adversary> <t>
 <C_1>
 <C_2>
 <C_3>
@@ -34,8 +34,8 @@ The executable takes in the path to a config file which contains the simulation 
 * ***#node*** is the number of nodes
 * ***Z*** is the % of slow nodes
 * ***Tx*** is the mean transaction time.
-* ***Sim Time*** is the simulation time
 * ***T_k*** is the mean of interarrival of blocks for the k-th node
+* ***Sim Time*** is the simulation time
 * ***m*** initial set size for Barabase-Albert Algorithm 
 * ***adversary*** is the type of adversary. We have implemented selfish and stubborn mining.
 * ***t*** is the % of connections the adversary has with other nodes.

@@ -70,18 +70,16 @@ void p2(std::ifstream &config){
     log("NumPeers: " + tos(numPeers));
     log("z: " + tos(z));
     log("Tx: " + tos(Tx));
+    log("meanTk: " + tos(meanTk));
     log("endTime: " + tos(endTime));
     log("m: " + tos(m));
-    log("\% Connections for adversary: "+ tos(num_connections));
     log("Adversary: " + adversary);
+    log("\% Connections for adversary: "+ tos(num_connections));
     log("");
 
     for(ID_t i = 0; i < numPeers; ++i){
         config >> computePower[i];
-        log(tos(i) + " " + tos(computePower[i]));
     }
-
-    log("*************************\n");
 
     Simulator s;
 
