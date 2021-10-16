@@ -419,4 +419,30 @@ public:
     std::pair<int, std::vector<Blk*> > addBlk(Blk *blk, Ticks arrival);
 };
 
+class StubbornTree: public Tree
+{
+public:
+    StubbornTree(ID_t id): Tree(id), state(0){
+        secret = genesis;
+        honest = genesis;
+        last_sent.insert(genesis);
+    }
+    BID_t state = 0;
+    std::set<Node*> last_sent;
+    Node* secret;
+    Node* honest;
+
+    /**
+     * - addBlk
+     * - startMining
+     * - findBlk
+     * 
+        0, 0' denoted by -1,
+        1, 2, etc. as defined in class
+    **/
+
+    BID_t startMining(ID_t id, Ticks timestamp);
+    std::pair<int, std::vector<Blk*> > addBlk(Blk *blk, Ticks arrival);
+};
+
 #endif

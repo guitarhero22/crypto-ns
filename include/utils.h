@@ -8,6 +8,7 @@
 #include <chrono>
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 typedef long ID_t;           ///< ID for peers
 typedef long BID_t; ///< ID for Blocks
@@ -78,4 +79,10 @@ void log(std::string str);
 std::string ticks2str(Ticks time);
 
 
+class NotImplementedException : public std::logic_error
+{
+public:
+    explicit NotImplementedException (const std::string& what_arg): std::logic_error(what_arg) {}
+
+};
 #endif

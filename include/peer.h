@@ -109,7 +109,7 @@ public:
      * @returns instance of the Peer Class
      */
     Peer(ID_t id, Ticks meanTxn, Ticks meanMine, bool slow);
-    Peer(ID_t id, Ticks meanTxn, Ticks meanMine, bool slow, bool selfish);
+    Peer(ID_t id, Ticks meanTxn, Ticks meanMine, bool slow, std::string adversary);
 
     /**
      * Simple Getter
@@ -189,7 +189,7 @@ public:
     std::exponential_distribution<Ticks> nextBlkTime; ///< For sampling time intervals between Blocks
 
     bool slow = false;          ///< Whether this peer has slow connetion
-    bool selfish = false;       ///< Whether this peer is selfish
+    std::string adversary;       ///< Whether this peer is selfish
     Ticks computePower; ///< Compute Power, for deciding when a block will be mined
     Ticks txnGenFreq;   ///< Transaction Generation Frequency
 
