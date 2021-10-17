@@ -12,9 +12,9 @@ cd results
 for adversary in selfish stubborn
 do
     echo $adversary >> results.txt
-    for compute_power in 20 22.5 25 27.5 30 32.5 35 37.5 40 42.5 45
+    for compute_power in 20 22.5 25 27.5 30 32.5 35 37.5 40 42.5 45 47.5
     do
-        for num_con in 25 50 75
+        for num_con in 75
         do
             dir="$adversary"_"$compute_power"_"$num_con"
             echo $dir

@@ -4,8 +4,8 @@ def print_config(num_con, compute_power, adversary):
     n = 100
     z = 50
     Tx = 10000
-    Tk = 10000
-    SimTime = 1000000
+    Tk = 1000
+    SimTime = 300000
     m = 2
 
     print(n, z, Tx, Tk, SimTime, m, adversary, num_con)
