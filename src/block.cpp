@@ -666,7 +666,7 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
             orphans.erase(was_lost); // erase because, no longer orphan
         }
 
-        //check if a new longer chaing was seem
+        //check if a new longer chaing was seen on honest chain
         if (longer != honest)
         {
             //update transaction pool 
@@ -684,6 +684,7 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
 
             //Update State
             if(honest -> chainLength > secret -> chainLength){
+                //If honest miners take the lead, start mining on the honest chain, and go back to state 0
                 state = 0;
                 secret = honest;
 
@@ -691,12 +692,14 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
                 ret.first = NEW_LONGEST_CHAIN;
             }
             else if(honest -> chainLength == secret -> chainLength){
+                //If honest miners catch up, keep mining on secret chain but release all the blocks
                 state = -1;
 
                 panic = 0;
                 ret.first = SEND;
             }
             else if(honest -> chainLength < secret -> chainLength){
+                //Release some blocks as the honest miners try to catch up and update state accordingly
                 state = secret -> chainLength - honest -> chainLength;
 
                 panic = state;
@@ -706,15 +709,16 @@ std::pair<int, std::vector<Blk*> >  SelfishTree::addBlk(Blk *blk, Ticks arrival)
 
         if(panic >= 0)
         {   
-            if(panic == 1) panic = state = 0; //if honest miners catch up and we have only a lead of 1
+            //if honest miners catch up and we have only a lead of 1 go to state 0'
+            if(panic == 1) panic = state = 0; 
 
             Node* node_to_send = secret;
 
+            //release some number of blocks as the honest miners try to catch up
             while(panic--){
                 assert(node_to_send != NULL);
                 node_to_send = node_to_send -> parent;
             }
-
             while(last_sent.find(node_to_send) == last_sent.end()){
                 ret.second.push_back(node_to_send -> blk);
                 last_sent.insert(node_to_send);

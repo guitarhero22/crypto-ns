@@ -17,7 +17,7 @@ void logerr(std::string str)
 
 void log(std::string str)
 {
-    std::cout << str << std::endl;
+    std::cerr << str << std::endl;
     return;
 }
 

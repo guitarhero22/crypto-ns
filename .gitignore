@@ -7,6 +7,7 @@ test
 #build dir
 build/*
 docs/*
+config2.tar.gz
 
 # Prerequisites
 *.d

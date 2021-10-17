@@ -310,8 +310,14 @@ int Simulator::resultDump(std::string basename)
         tot += peer.tree->blksByMe;
     }
 
-    // file << "\nTotal Blocks in Trees: " << tot << std::endl;
-    // file << "\nTotal Blocks Generated: " << tot;
+    int n = num_peers;
+    std::cout << 100.0 / (total_power * meanTk[n-1])  // compute power
+    << ", " << peers[n - 1].tree -> blksByMe // blocks by attacker
+    << ", " << peers[n-1].tree->blocksInChainById(n-1) // blocks by attacker in chain
+    << ", " << Blk::NUM_BLKS // total blocks
+    << ", " << peers[n-1].tree->blocksInChainById(n-1) * 100.0 / peers[n-1].tree->longest->chainLength //% in longest chain
+    << ", " << peers[n - 1].tree -> blksByMe * 100.0 / Blk::NUM_BLKS  //% of total blocks
+    << std::endl;
 
     return 0;
 }

@@ -8,6 +8,7 @@
 
 #include "event.h"
 #include "peer.h"
+#include "block.h"
 #include <vector>
 #include <queue>
 #include <fstream>

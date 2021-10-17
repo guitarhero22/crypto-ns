@@ -13,7 +13,7 @@
 /**
  * For running Assignment 1
  */
-void p1(std::ifstream &config){
+void p1(std::istream &config){
     ID_t numPeers, m;
     double z;
     Ticks Tx, endTime;
@@ -56,7 +56,7 @@ void p1(std::ifstream &config){
 /**
  * For running Assignment 2
  */
-void p2(std::ifstream &config){
+void p2(std::istream &config){
     ID_t numPeers, m;
     double z;
     Ticks Tx, endTime, meanTk;
@@ -104,20 +104,9 @@ void p2(std::ifstream &config){
  */
 int main(int argc, char* argv[]){
 
-    if(argc < 2){
-        std::cout << "Usage:\n$ ./crypto-ns <config_file_path>\n";
-        return 0;
-    }
+    std::istream &config = std::cin;
 
-    log("Configuration will be taken from file " + std::string(argv[1]));
-
-    std::ifstream config;
-    config.open(std::string(argv[1]));
-
-    if(config.is_open()) 
-        log("Configuring...");
-    else
-        logerr("Could Not Open Configuration File");
+    log("Configuring...");
 
     p2(config);
 
